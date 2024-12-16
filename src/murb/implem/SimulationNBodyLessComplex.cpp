@@ -11,7 +11,7 @@ SimulationNBodyLessComplex::SimulationNBodyLessComplex(const unsigned long nBodi
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 20.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
+    this->flopsPerIte = 30.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
     this->accelerations.resize(this->getBodies().getN());
 }
 
@@ -34,12 +34,9 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
-        for (unsigned long jBody = 0; jBody < this->getBodies().getN(); jBody++) {
+        for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody++) {
 
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
-            if(jBody <= iBody ){
-                continue;
-            }
             const float rijx = d[jBody].qx - d[iBody].qx; // 1 flop
             const float rijy = d[jBody].qy - d[iBody].qy; // 1 flop
             const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
@@ -48,18 +45,23 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
             const float rijSquared = std::pow(rijx, 2) + std::pow(rijy, 2) + std::pow(rijz, 2); // 5 flops
             // compute e²
             const float softSquared = std::pow(this->soft, 2); // 1 flops
+            
+            const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
+            
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            const float ai = this->G * d[jBody].m / std::pow(rijSquared + softSquared, 3.f / 2.f); // 5 flops
+            const float ai = this->G * d[jBody].m / pow; // 3 flops
+            
 
+            const float aj = this->G * d[iBody].m / pow; // 3 flops
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
             this->accelerations[iBody].ax += ai * rijx; // 2 flops
             this->accelerations[iBody].ay += ai * rijy; // 2 flops
             this->accelerations[iBody].az += ai * rijz; // 2 flops
 
             //Adding acceleration forces to the j body as well.
-            this->accelerations[jBody].ax += ai * rijx; // 2 flops
-            this->accelerations[jBody].ay += ai * rijy; // 2 flops
-            this->accelerations[jBody].az += ai * rijz; // 2 flops
+            this->accelerations[jBody].ax -= aj * rijx; // 2 flops
+            this->accelerations[jBody].ay -= aj * rijy; // 2 flops
+            this->accelerations[jBody].az -= aj * rijz; // 2 flops
         }
     }
 }
