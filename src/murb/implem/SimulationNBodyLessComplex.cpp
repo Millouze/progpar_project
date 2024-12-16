@@ -31,7 +31,7 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
 {
     const std::vector<dataAoS_t<float>> &d = this->getBodies().getDataAoS();
 
-    const float softSquared = this->soft *  this->soft// 1 flops
+    const float softSquared = this->soft *  this->soft;// 1 flops
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
