@@ -7,11 +7,12 @@
 #include <string>
 
 #include "SimulationNBodyLessComplex.hpp"
+#include "SimulationNBodyNaive.hpp"
 
 void test_nbody_less_complex(const size_t n, const float soft, const float dt, const size_t nIte, const std::string &scheme,
                      const float eps)
 {
-    SimulationNBodyLessComplex simuRef(n, scheme, soft);
+    SimulationNBodyNaive simuRef(n, scheme, soft);
     simuRef.setDt(dt);
 
     SimulationNBodyLessComplex simuTest(n, scheme, soft);
