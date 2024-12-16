@@ -11,7 +11,7 @@ SimulationNBodyLessComplex::SimulationNBodyLessComplex(const unsigned long nBodi
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 30.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
+    this->flopsPerIte = 28.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
     this->accelerations.resize(this->getBodies().getN());
 }
 
