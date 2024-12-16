@@ -43,7 +43,7 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
             const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
 
             // compute the || rij ||² distance between body i and body j
-            const float rijSquared = std::pow(rijx, 2) + std::pow(rijy, 2) + std::pow(rijz, 2); // 5 flops
+            const float rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
             // compute e²
             
             
