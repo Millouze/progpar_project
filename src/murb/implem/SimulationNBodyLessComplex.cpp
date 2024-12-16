@@ -11,7 +11,7 @@ SimulationNBodyLessComplex::SimulationNBodyLessComplex(const unsigned long nBodi
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 28.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
+    this->flopsPerIte = 27.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
     this->accelerations.resize(this->getBodies().getN());
 }
 
@@ -31,6 +31,7 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
 {
     const std::vector<dataAoS_t<float>> &d = this->getBodies().getDataAoS();
 
+    const float softSquared = std::pow(this->soft, 2); // 1 flops
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
@@ -44,7 +45,7 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
             // compute the || rij ||² distance between body i and body j
             const float rijSquared = std::pow(rijx, 2) + std::pow(rijy, 2) + std::pow(rijz, 2); // 5 flops
             // compute e²
-            const float softSquared = std::pow(this->soft, 2); // 1 flops
+            
             
             const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
