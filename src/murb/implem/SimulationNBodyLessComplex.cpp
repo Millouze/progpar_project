@@ -24,6 +24,9 @@ void SimulationNBodyLessComplex::initIteration()
     }
 }
 
+
+//We delete unecessary double calculation of forces by using the reciprocity of gravitational pull.
+
 void SimulationNBodyLessComplex::computeBodiesAcceleration()
 {
     const std::vector<dataAoS_t<float>> &d = this->getBodies().getDataAoS();
@@ -32,6 +35,11 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
         for (unsigned long jBody = 0; jBody < this->getBodies().getN(); jBody++) {
+
+            //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
+            if(jBody <= iBody ){
+                continue;
+            }
             const float rijx = d[jBody].qx - d[iBody].qx; // 1 flop
             const float rijy = d[jBody].qy - d[iBody].qy; // 1 flop
             const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
@@ -47,6 +55,11 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
             this->accelerations[iBody].ax += ai * rijx; // 2 flops
             this->accelerations[iBody].ay += ai * rijy; // 2 flops
             this->accelerations[iBody].az += ai * rijz; // 2 flops
+
+            //Adding acceleration forces to the j body as well.
+            this->accelerations[jBody].ax += ai * rijx; // 2 flops
+            this->accelerations[jBody].ay += ai * rijy; // 2 flops
+            this->accelerations[jBody].az += ai * rijz; // 2 flops
         }
     }
 }
