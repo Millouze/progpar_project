@@ -55,5 +55,5 @@ dkms.conf
 # CMake
 build*/
 CMakeLists.txt
-
+.cache/
 .DS_Store
