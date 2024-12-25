@@ -107,4 +107,4 @@ Usage: ./bin/murb -i nIterations -n nBodies [--dt timeStep] [--gf] [--help] [--i
   -s      bodies scheme (initial conditions can be "galaxy" or "random").
   -v      enable verbose mode.
 ```
-
+Happy holidays. :|
