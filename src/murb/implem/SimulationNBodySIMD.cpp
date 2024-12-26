@@ -18,6 +18,9 @@ SimulationNBodySIMD::SimulationNBodySIMD(const unsigned long nBodies, const std:
 {
     this->flopsPerIte = 27.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
     //this->accelerations.resize(this->getBodies().getN());
+    this->accelerations.ax.resize(this->getBodies().getN() + this->getBodies().getPadding());
+    this->accelerations.ay.resize(this->getBodies().getN() + this->getBodies().getPadding());
+    this->accelerations.az.resize(this->getBodies().getN() + this->getBodies().getPadding());
 }
 
 void SimulationNBodySIMD::initIteration()
@@ -46,6 +49,18 @@ mipp::Reg<float> Q_rsqrt( mipp::Reg<float> number )
 //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
 
 	return y;
+}
+
+
+void print_reg(mipp::Reg<float> reg) {
+    constexpr int N = mipp::N<float>();
+    float mem[N];
+    reg.store(mem);
+    printf("{");
+    for (int i=0;i<N;i++) {
+        printf("%f, ",mem[i]);
+    }
+    printf("\b}\n");
 }
 
 //We delete unecessary double calculation of forces by using the reciprocity of gravitational pull.
@@ -86,7 +101,9 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             mipp::Reg<float> r_jm = d.m[jBody];
 
             // compute the || rij ||² distance between body i and body j
-            mipp::Reg< float>rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
+            mipp::Reg< float>rijSquared = rijx*rijx; 
+            rijSquared += rijy * rijy;
+            rijSquared += rijz * rijz; // 5 flops
             // compute e²
 
             mipp::Reg<float> r_pow = rijSquared+softSquared;
