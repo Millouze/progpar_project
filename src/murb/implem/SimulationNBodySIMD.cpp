@@ -118,9 +118,9 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             r_ay = mipp::load(&this->accelerations.ay[jBody]);
             r_az = mipp::load(&this->accelerations.az[jBody]);
             
-            r_ax = r_ax + (r_aj * rijx);
-            r_ay = r_ax + (r_aj * rijy);
-            r_az = r_ax + (r_aj * rijz);
+            r_ax = r_ax - (r_aj * rijx);
+            r_ay = r_ax - (r_aj * rijy);
+            r_az = r_ax - (r_aj * rijz);
             // this->accelerations[jBody].ax -= aj * rijx; // 2 flops
             // this->accelerations[jBody].ay -= aj * rijy; // 2 flops
             // this->accelerations[jBody].az -= aj * rijz; // 2 flops
