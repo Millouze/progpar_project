@@ -42,7 +42,7 @@ void test_nbody_SIMD(const size_t n, const float soft, const float dt, const siz
     }
 }
 
-TEST_CASE("n-body - less complex", "[lsscpx]")
+TEST_CASE("n-body - SIMD", "[lsscpx]")
 {
     SECTION("fp32 - n=13 - i=1 - random") { test_nbody_SIMD(13, 2e+08, 3600, 1, "random", 1e-3); }
     SECTION("fp32 - n=13 - i=100 - random") { test_nbody_SIMD(13, 2e+08, 3600, 100, "random", 5e-3); }

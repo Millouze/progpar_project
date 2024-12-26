@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -82,29 +83,50 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             mipp::Reg< float>rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
             // compute e²
 
-            mipp::Reg<float> pow = Q_rsqrt(rijSquared+softSquared);
-            pow *= pow*pow;
+            mipp::Reg<float> r_pow = Q_rsqrt(rijSquared+softSquared);
+            r_pow *= r_pow*r_pow;
             
             //const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            mipp::Reg<float> ai = (r_jm * pow) * this->G; // 3 flops
+            mipp::Reg<float> r_ai = (r_jm * r_pow) * this->G; // 3 flops
             
 
             //const float aj = this->G * d[iBody].m / pow; // 3 flops
-            mipp::Reg<float> aj = (r_im * pow) * this->G; // 3 flops
+            mipp::Reg<float> r_aj = (r_im * r_pow) * this->G; // 3 flops
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
 
-            // FIXME need to figure out how to store the acceleration from the SIMD register
-            // to the NBody Structure.
-            this->accelerations[iBody].ax += ai * rijx; // 2 flops
-            this->accelerations[iBody].ay += ai * rijy; // 2 flops
-            this->accelerations[iBody].az += ai * rijz; // 2 flops
+            mipp::Reg<float> r_ax;
+            mipp::Reg<float> r_ay;
+            mipp::Reg<float> r_az;
+
+            r_ax = (r_ai * rijx);
+            r_ay = (r_ai * rijy);
+            r_az = (r_ai * rijz);
+
+            this->accelerations.ax[iBody] += mipp::hadd<float>(r_ax);
+            this->accelerations.ay[iBody] += mipp::hadd<float>(r_ay);
+            this->accelerations.az[iBody] += mipp::hadd<float>(r_az);
+            
+            // this->accelerations.ax[iBody] += ai * rijx; // 2 flops
+            // this->accelerations[iBody].ay += ai * rijy; // 2 flops
+            // this->accelerations[iBody].az += ai * rijz; // 2 flops
 
             //Adding acceleration forces to the j body as well.
-            this->accelerations[jBody].ax -= aj * rijx; // 2 flops
-            this->accelerations[jBody].ay -= aj * rijy; // 2 flops
-            this->accelerations[jBody].az -= aj * rijz; // 2 flops
+
+            r_ax = mipp::load(&this->accelerations.ax[jBody]);
+            r_ay = mipp::load(&this->accelerations.ay[jBody]);
+            r_az = mipp::load(&this->accelerations.az[jBody]);
+            
+            r_ax = r_ax + (r_aj * rijx);
+            r_ay = r_ax + (r_aj * rijy);
+            r_az = r_ax + (r_aj * rijz);
+            // this->accelerations[jBody].ax -= aj * rijx; // 2 flops
+            // this->accelerations[jBody].ay -= aj * rijy; // 2 flops
+            // this->accelerations[jBody].az -= aj * rijz; // 2 flops
+            mipp::store(&this->accelerations.ax[jBody],r_ax );
+            mipp::store(&this->accelerations.ay[jBody],r_ay );
+            mipp::store(&this->accelerations.az[jBody],r_az );
         }
     }
 }
