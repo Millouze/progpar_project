@@ -35,6 +35,7 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
+        float ax = this->accelerations[iBody].ax, ay = this->accelerations[iBody].ay, az = this->accelerations[iBody].az;
         for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody++) {
 
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
@@ -55,15 +56,19 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
 
             const float aj = this->G * d[iBody].m / pow; // 3 flops
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
-            this->accelerations[iBody].ax += ai * rijx; // 2 flops
-            this->accelerations[iBody].ay += ai * rijy; // 2 flops
-            this->accelerations[iBody].az += ai * rijz; // 2 flops
+            ax += ai * rijx; // 2 flops
+            ay += ai * rijy; // 2 flops
+            az += ai * rijz; // 2 flops
 
             //Adding acceleration forces to the j body as well.
             this->accelerations[jBody].ax -= aj * rijx; // 2 flops
             this->accelerations[jBody].ay -= aj * rijy; // 2 flops
             this->accelerations[jBody].az -= aj * rijz; // 2 flops
         }
+
+        this->accelerations[iBody].ax = ax;
+        this->accelerations[iBody].ay = ay;
+        this->accelerations[iBody].az = az;
     }
 }
 
