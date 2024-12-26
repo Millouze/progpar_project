@@ -26,9 +26,9 @@ SimulationNBodySIMD::SimulationNBodySIMD(const unsigned long nBodies, const std:
 void SimulationNBodySIMD::initIteration()
 {
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
-        this->accelerations.ax.push_back(0.f);
-        this->accelerations.ay.push_back(0.f);
-        this->accelerations.az.push_back(0.f);
+        this->accelerations.ax.push_back(0.F);
+        this->accelerations.ay.push_back(0.F);
+        this->accelerations.az.push_back(0.F);
     }
 }
 
@@ -51,17 +51,6 @@ mipp::Reg<float> Q_rsqrt( mipp::Reg<float> number )
 	return y;
 }
 
-
-void print_reg(mipp::Reg<float> reg) {
-    constexpr int N = mipp::N<float>();
-    float mem[N];
-    reg.store(mem);
-    printf("{");
-    for (int i=0;i<N;i++) {
-        printf("%f, ",mem[i]);
-    }
-    printf("\b}\n");
-}
 
 //We delete unecessary double calculation of forces by using the reciprocity of gravitational pull.
 
@@ -86,9 +75,6 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
 
             
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
-            // const float rijx = d[jBody].qx - d[iBody].qx; // 1 flop
-            // const float rijy = d[jBody].qy - d[iBody].qy; // 1 flop
-            // const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
 
             mipp::Reg< float> rijx = mipp::load(&d.qx[jBody]);
             mipp::Reg< float> rijy = mipp::load(&d.qy[jBody]);
@@ -98,22 +84,42 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             rijy = rijy - r_iqy;
             rijz = rijz - r_iqz;
             
-            mipp::Reg<float> r_jm = d.m[jBody];
+            // mipp::dump<float>(rijx.r);
+            // mipp::dump<float>(rijy.r);
+            // mipp::dump<float>(rijz.r);
+            mipp::Reg<double> r_jm_1 =mipp::load(&d.m[jBody]);
+            mipp::Reg<double> r_jm_2 = mipp::load(&d.m[jBody+2]);
 
             // compute the || rij ||² distance between body i and body j
             mipp::Reg< float>rijSquared = rijx*rijx; 
             rijSquared += rijy * rijy;
             rijSquared += rijz * rijz; // 5 flops
-            // compute e²
 
-            mipp::Reg<float> r_pow = rijSquared+softSquared;
-            r_pow *= r_pow*r_pow;
-            r_pow = mipp::rsqrt(r_pow);
+            mipp::Reg<double> r_pow_1 = {mipp::get(rijSquared, 0), mipp::get(rijSquared, 1)}; 
+            mipp::Reg<double> r_pow_2 = {mipp::get(rijSquared, 2), mipp::get(rijSquared, 3)};
+            r_pow_1 *= r_pow_1 * r_pow_1;
+            r_pow_2 *= r_pow_2 * r_pow_2;
+            // printf("r_pow avant revers sqrt\n");
+            // mipp::dump<float>(r_pow.r);
+            // printf("\n");
+            r_pow_1 = mipp::rsqrt(r_pow_1);
+            r_pow_2 = mipp::rsqrt(r_pow_2);
+            // printf("r_pow apres reverse sqrt\n");
+            // mipp::dump<double>(r_pow_1.r);
+            // mipp::dump<double>(r_pow_2.r);
+            // printf("\n");
+            // sleep(5);
             
             //const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            mipp::Reg<float> r_ai = (r_jm * r_pow) * this->G; // 3 flops
+            mipp::Reg<double> r_ai_1 = (r_jm_1 * r_pow_1) * this->G; // 3 flops
+            mipp::Reg<double> r_ai_2 = (r_jm_2 * r_pow_2) * this->G; // 3 flops
+            // printf("r_ai\n");
+            // mipp::dump<double>(r_ai_1.r);
+            // mipp::dump<double>(r_ai_2.r);
+            // printf("\n");
+            // sleep(5);
             
 
             //const float aj = this->G * d[iBody].m / pow; // 3 flops
@@ -126,21 +132,31 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
              
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
 
-            mipp::Reg<float> r_ax;
-            mipp::Reg<float> r_ay;
-            mipp::Reg<float> r_az;
+            mipp::Reg<double> r_ax_1;
+            mipp::Reg<double> r_ay_1;
+            mipp::Reg<double> r_az_1;
+            mipp::Reg<double> r_ax_2;
+            mipp::Reg<double> r_ay_2;
+            mipp::Reg<double> r_az_2;
+            mipp::Reg<double> rijx_1 = {mipp::get(rijx, 0), mipp::get(rijx, 1)};
+            mipp::Reg<double> rijx_2 = {mipp::get(rijx, 2), mipp::get(rijx, 3)};
+            mipp::Reg<double> rijy_1 = {mipp::get(rijy, 0), mipp::get(rijy, 1)};
+            mipp::Reg<double> rijy_2 = {mipp::get(rijy, 2), mipp::get(rijy, 3)};
+            mipp::Reg<double> rijz_1 = {mipp::get(rijz, 0), mipp::get(rijz, 1)};
+            mipp::Reg<double> rijz_2 = {mipp::get(rijz, 2), mipp::get(rijz, 3)};
 
-            r_ax = (r_ai * rijx);
-            r_ay = (r_ai * rijy);
-            r_az = (r_ai * rijz);
 
-            this->accelerations.ax[iBody] += mipp::hadd<float>(r_ax);
-            this->accelerations.ay[iBody] += mipp::hadd<float>(r_ay);
-            this->accelerations.az[iBody] += mipp::hadd<float>(r_az);
+            r_ax_1 = (r_ai_1 * rijx_1);
+            r_ax_2 = (r_ai_2 * rijx_2);
+            r_ay_1 = (r_ai_1 * rijy_1);
+            r_ay_2 = (r_ai_2 * rijy_2);
+            r_az_1 = (r_ai_1 * rijz_1);
+            r_az_2 = (r_ai_2 * rijz_2);
+
+            this->accelerations.ax[iBody] += mipp::hadd<double>(r_ax_1) + mipp::hadd<double>(r_ax_2);
+            this->accelerations.ay[iBody] += mipp::hadd<double>(r_ay_1) + mipp::hadd<double>(r_ay_2);
+            this->accelerations.az[iBody] += mipp::hadd<double>(r_az_1) + mipp::hadd<double>(r_az_2);
             
-            // this->accelerations.ax[iBody] += ai * rijx; // 2 flops
-            // this->accelerations[iBody].ay += ai * rijy; // 2 flops
-            // this->accelerations[iBody].az += ai * rijz; // 2 flops
 
             //Adding acceleration forces to the j body as well.
             
