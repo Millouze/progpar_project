@@ -20,6 +20,7 @@
 
 #include "implem/SimulationNBodyNaive.hpp"
 #include "implem/SimulationNBodyLessComplex.hpp"
+#include "implem/SimulationNBodySIMD.hpp"
 
 /* global variables */
 unsigned long NBodies;               /*!< Number of bodies. */
@@ -188,6 +189,9 @@ SimulationNBodyInterface *createImplem()
     }
     else if (ImplTag == "cpu+LessComplex") {
         simu = new SimulationNBodyLessComplex(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "cpu+SIMD"){
+        simu = new  SimulationNBodySIMD(NBodies, BodiesScheme, Softening);
     }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;

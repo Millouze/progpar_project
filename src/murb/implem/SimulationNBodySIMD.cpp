@@ -27,11 +27,30 @@ void SimulationNBodySIMD::initIteration()
 }
 
 
+//Quake's fast inverse square root but now MIPPed
+mipp::Reg<float> Q_rsqrt( mipp::Reg<float> number )
+{
+	long i;
+	mipp::Reg<float> x2, y;
+	mipp::Reg<float> threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;						// evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return y;
+}
+
 //We delete unecessary double calculation of forces by using the reciprocity of gravitational pull.
 
 void SimulationNBodySIMD::computeBodiesAcceleration()
 {
-    const std::vector<dataAoS_t<float>> &d = this->getBodies().getDataAoS();
+    const dataSoA_t<float> &d = this->getBodies().getDataSoA();
+
 
     const float softSquared = this->soft *  this->soft;// 1 flops
 
@@ -42,30 +61,42 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
 
-        mipp::Reg<float> r_iqx = d[iBody].qx;
-        mipp::Reg<float> r_iqy = d[iBody].qy;
-        mipp::Reg<float> r_iqz = d[iBody].qz;
+        mipp::Reg<float> r_iqx = d.qx[iBody];
+        mipp::Reg<float> r_iqy = d.qy[iBody];
+        mipp::Reg<float> r_iqz = d.qz[iBody];
+        mipp::Reg<float> r_im = d.m[iBody];
         
         for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody+=N) {
             
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
-            const float rijx = d[jBody].qx - d[iBody].qx; // 1 flop
-            const float rijy = d[jBody].qy - d[iBody].qy; // 1 flop
-            const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
+            // const float rijx = d[jBody].qx - d[iBody].qx; // 1 flop
+            // const float rijy = d[jBody].qy - d[iBody].qy; // 1 flop
+            // const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
+
+            mipp::Reg< float> rijx = mipp::load(&d.qx[jBody]);
+            mipp::Reg< float> rijy = mipp::load(&d.qy[jBody]);
+            mipp::Reg< float> rijz = mipp::load(&d.qz[jBody]);
+            mipp::Reg<float> r_jm = d.m[jBody];
 
             // compute the || rij ||² distance between body i and body j
-            const float rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
+            mipp::Reg< float>rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
             // compute e²
+
+            mipp::Reg<float> pow = Q_rsqrt(rijSquared+softSquared);
+            pow *= pow*pow;
             
-            
-            const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
+            //const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            const float ai = this->G * d[jBody].m / pow; // 3 flops
+            mipp::Reg<float> ai = (r_jm / pow) * this->G; // 3 flops
             
 
-            const float aj = this->G * d[iBody].m / pow; // 3 flops
+            //const float aj = this->G * d[iBody].m / pow; // 3 flops
+            mipp::Reg<float> aj = (r_im / pow) * this->G; // 3 flops
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
+
+            // FIXME need to figure out how to store the acceleration from the SIMD register
+            // to the NBody Structure.
             this->accelerations[iBody].ax += ai * rijx; // 2 flops
             this->accelerations[iBody].ay += ai * rijy; // 2 flops
             this->accelerations[iBody].az += ai * rijz; // 2 flops
