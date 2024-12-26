@@ -88,11 +88,11 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             //const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            mipp::Reg<float> ai = (r_jm / pow) * this->G; // 3 flops
+            mipp::Reg<float> ai = (r_jm * pow) * this->G; // 3 flops
             
 
             //const float aj = this->G * d[iBody].m / pow; // 3 flops
-            mipp::Reg<float> aj = (r_im / pow) * this->G; // 3 flops
+            mipp::Reg<float> aj = (r_im * pow) * this->G; // 3 flops
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
 
             // FIXME need to figure out how to store the acceleration from the SIMD register
