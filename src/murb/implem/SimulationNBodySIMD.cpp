@@ -1,9 +1,11 @@
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <ostream>
 #include <string>
 
 #include "../../../lib/MIPP/src/mipp.h"
@@ -15,15 +17,15 @@ SimulationNBodySIMD::SimulationNBodySIMD(const unsigned long nBodies, const std:
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
     this->flopsPerIte = 27.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
-    this->accelerations.resize(this->getBodies().getN());
+    //this->accelerations.resize(this->getBodies().getN());
 }
 
 void SimulationNBodySIMD::initIteration()
 {
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
-        this->accelerations[iBody].ax = 0.f;
-        this->accelerations[iBody].ay = 0.f;
-        this->accelerations[iBody].az = 0.f;
+        this->accelerations.ax.push_back(0.f);
+        this->accelerations.ay.push_back(0.f);
+        this->accelerations.az.push_back(0.f);
     }
 }
 
@@ -57,7 +59,6 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
 
     //SIMD Internal loop pitch
     constexpr int N = mipp::N<float>();
-    
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
@@ -66,7 +67,6 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
         mipp::Reg<float> r_iqy = d.qy[iBody];
         mipp::Reg<float> r_iqz = d.qz[iBody];
         mipp::Reg<float> r_im = d.m[iBody];
-        
         for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody+=N) {
             
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
