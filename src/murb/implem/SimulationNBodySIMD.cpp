@@ -74,6 +74,9 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
 
     //SIMD Internal loop pitch
     constexpr int N = mipp::N<float>();
+    constexpr int D = mipp::N<double>();
+    printf("Double precision SIMD register width : %d\n", D);
+    sleep(5);
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
@@ -98,7 +101,7 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             rijy = rijy - r_iqy;
             rijz = rijz - r_iqz;
             
-            mipp::Reg<float> r_jm = d.m[jBody];
+            mipp::Reg<float> r_jm = mipp::load(&d.m[jBody]);
 
             // compute the || rij ||² distance between body i and body j
             mipp::Reg< float>rijSquared = rijx*rijx; 
@@ -108,12 +111,13 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
 
             mipp::Reg<float> r_pow = rijSquared+softSquared;
             r_pow *= r_pow*r_pow;
-            r_pow = mipp::rsqrt(r_pow);
+            r_pow = mipp::sqrt(r_pow);
+            mipp::dump<float>(r_pow.r);
             
             //const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            mipp::Reg<float> r_ai = (r_jm * r_pow) * this->G; // 3 flops
+            mipp::Reg<float> r_ai = (r_jm * this->G) / r_pow; // 3 flops
             
 
             //const float aj = this->G * d[iBody].m / pow; // 3 flops
