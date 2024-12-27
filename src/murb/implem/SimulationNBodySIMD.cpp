@@ -58,7 +58,7 @@ void print_reg(mipp::Reg<float> reg) {
     reg.store(mem);
     printf("{");
     for (int i=0;i<N;i++) {
-        printf("%f, ",mem[i]);
+        printf(", %f ",mem[i]);
     }
     printf("\b}\n");
 }
@@ -74,15 +74,22 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
 
     //SIMD Internal loop pitch
     constexpr int N = mipp::N<float>();
+    mipp::Reg<float> grav = this->G;
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
 
         mipp::Reg<float> r_iqx = d.qx[iBody];
+        // if (!iBody) {
+        //     print_reg(r_iqx);
+        // }
         mipp::Reg<float> r_iqy = d.qy[iBody];
         mipp::Reg<float> r_iqz = d.qz[iBody];
         mipp::Reg<float> r_im = d.m[iBody];
-        for (unsigned long jBody =  iBody+1; jBody < this->getBodies().getN(); jBody+=N) {
+        // if (!iBody) {
+        //     print_reg(r_im);
+        // }
+        for (unsigned long jBody =  0; jBody < this->getBodies().getN(); jBody+=N) {
 
             
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
@@ -100,6 +107,7 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             
             mipp::Reg<float> r_jm = mipp::load(&d.m[jBody]);
 
+            // print_reg(r_jm);
             // compute the || rij ||² distance between body i and body j
             mipp::Reg< float>rijSquared = rijx*rijx; 
             rijSquared += rijy * rijy;
@@ -113,7 +121,7 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             //const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            mipp::Reg<float> r_ai = (r_jm * r_pow) * this->G; // 3 flops
+            mipp::Reg<float> r_ai = (r_jm * r_pow) * grav; // 3 flops
             
 
             //const float aj = this->G * d[iBody].m / pow; // 3 flops
