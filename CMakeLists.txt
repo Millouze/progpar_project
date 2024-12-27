@@ -6,7 +6,7 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Command line options
 option (ENABLE_MURB     "Enable to compile the MUrB executable"        ON )
-option (ENABLE_VISU     "Enable the OpenGL visualization"              ON )
+option (ENABLE_VISU     "Enable the OpenGL visualization"              OFF)
 option (ENABLE_TEST     "Enable test program to validate MUrB kernels" ON )
 option (ENABLE_MURB_OMP "Enable to compile the MUrB OMP executable"    ON )
 option (ENABLE_MURB_OCL "Enable to compile the MUrB OCL executable"    ON)
