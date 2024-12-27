@@ -98,7 +98,7 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             rijy = rijy - r_iqy;
             rijz = rijz - r_iqz;
             
-            mipp::Reg<float> r_jm = d.m[jBody];
+            mipp::Reg<float> r_jm = mipp::load(&d.m[jBody]);
 
             // compute the || rij ||² distance between body i and body j
             mipp::Reg< float>rijSquared = rijx*rijx; 
