@@ -91,6 +91,7 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"gpu+CUDA\"\n"
                      "\t\t\t - \"gpu+CUDA_opti\"\n"
                      "\t\t\t - \"cpu+SIMD_2\"\n"
+                     "\t\t\t - \"cpu+OpenMP\"\n"
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
     docArgs["-soft"] = "softening factor.";
