@@ -5,6 +5,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <omp.h>
 
 #include "SimulationNBodyOpenMP.hpp"
 
@@ -34,10 +35,18 @@ void SimulationNBodyOpenMP::computeBodiesAcceleration()
 
     const float softSquared = this->soft *  this->soft;// 1 flops
     // flops = n² * 20
-    for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
+    #pragma omp parallel
+    {
+    #pragma omp for nowait
+    
+        for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
+        // #pragma omp parallel
+        // float ax = this->accelerations[iBody].ax, ay = this->accelerations[iBody].ay, az = this->accelerations[iBody].az;
         float ax = this->accelerations[iBody].ax, ay = this->accelerations[iBody].ay, az = this->accelerations[iBody].az;
-        for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody++) {
+            // #pragma omp for nowait
+            // {
+            for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody++) {
 
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
             const float rijx = d[jBody].qx - d[iBody].qx; // 1 flop
@@ -65,11 +74,15 @@ void SimulationNBodyOpenMP::computeBodiesAcceleration()
             this->accelerations[jBody].ax -= aj * rijx; // 2 flops
             this->accelerations[jBody].ay -= aj * rijy; // 2 flops
             this->accelerations[jBody].az -= aj * rijz; // 2 flops
-        }
+            }
+            // }
 
-        this->accelerations[iBody].ax = ax;
-        this->accelerations[iBody].ay = ay;
-        this->accelerations[iBody].az = az;
+            this->accelerations[iBody].ax = ax;
+            this->accelerations[iBody].ay = ay;
+            this->accelerations[iBody].az = az;
+            }
+        
+        
     }
 }
 

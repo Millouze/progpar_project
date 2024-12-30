@@ -34,8 +34,8 @@ bool VisuColor = true;               /*!< Enable visualization with colors. */
 float Dt = 3600;                     /*!< Time step in seconds. */
 float MinDt = 200;                   /*!< Minimum time step. */
 float Softening = 2e+08;             /*!< Softening factor value. */
-unsigned int WinWidth = 1024;        /*!< Window width for visualization. */
-unsigned int WinHeight = 768;        /*!< Window height for visualization. */
+unsigned int WinWidth = 1920;        /*!< Window width for visualization. */
+unsigned int WinHeight = 1080;        /*!< Window height for visualization. */
 unsigned int LocalWGSize = 32;       /*!< OpenCL local workgroup size. */
 std::string BodiesScheme = "galaxy"; /*!< Initial condition of the bodies. */
 bool ShowGFlops = false;             /*!< Display the GFlop/s. */
@@ -80,6 +80,7 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"cpu+naive\"\n"
                      "\t\t\t - \"cpu+LessComplex\"\n"
                      "\t\t\t - \"cpu+SIMD\"\n"
+                     "\t\t\t - \"cpu+OpenMP\"\n"
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
     docArgs["-soft"] = "softening factor.";

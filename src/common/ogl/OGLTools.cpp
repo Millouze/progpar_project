@@ -39,11 +39,12 @@ GLFWwindow *OGLTools::initAndMakeWindow(const int winWidth, const int winHeight,
     glfwMakeContextCurrent(window);
 
     // Initialize GLEW
-    glewExperimental = true; // Needed for core profile
-    if (glewInit() != GLEW_OK) {
-        cerr << "Failed to initialize GLEW." << endl;
-        return (GLFWwindow *)0;
-    }
+    glewExperimental = GL_TRUE; // Needed for core profile
+    glewInit();
+    // if (glewInit()) {
+        // cerr << "Failed to initialize GLEW." << endl;
+        // return (GLFWwindow *)0;
+    // }
 
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
