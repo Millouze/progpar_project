@@ -491,7 +491,7 @@ void SimulationNBodySIMD::computeBodiesAccelerationV3()
     constexpr int N = mipp::N<float>();
     unsigned long loop_tail = (this->getBodies().getN()/N)*N;
 
-    //REgister with gravity in it
+    //Register with gravity in it
     mipp::Reg<float> grav = this->G;
     
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
@@ -518,22 +518,6 @@ void SimulationNBodySIMD::computeBodiesAccelerationV3()
             ai_x += (mipp::hadd<float>(rijx * ai));
             ai_y += (mipp::hadd<float>(rijy * ai));
             ai_z += (mipp::hadd<float>(rijz * ai));
-            // for (unsigned long jBody = 0; jBody < N; jBody++) {
-
-            
-                // 
-                // const float rijx = d.qx[jj+jBody] - d.qx[iBody]; // 1 flop
-                // const float rijy = d.qy[jj+jBody] - d.qy[iBody]; // 1 flop
-                // const float rijz = d.qz[jj+jBody] - d.qz[iBody]; // 1 flop
-
-                // compute the || rij ||² distance between body i and body j
-                // 
-                // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-                // const float ai = this->G * r_jm[jBody] / std::pow(rijSquared[jBody] + softSquared, 3.f / 2.f); // 5 flops
-                // ai_x += ai*rijx[jBody];
-                // ai_y += ai*rijy[jBody];
-                // ai_z += ai*rijz[jBody];
-            // }
         }
 
         for(unsigned long jBody = loop_tail; jBody < this->getBodies().getN(); jBody++){
@@ -542,12 +526,8 @@ void SimulationNBodySIMD::computeBodiesAccelerationV3()
             const float rijy = d.qy[jBody] - d.qy[iBody]; // 1 flop
             const float rijz = d.qz[jBody] - d.qz[iBody]; // 1 flop
 
-            // compute the || rij ||² distance between body i and body j
             const float rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
-            // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
             const float ai = this->G * d.m[jBody] / std::pow(rijSquared + softSquared, 3.f / 2.f); // 5 flops
-
-            // add the acceleration value into the acceleration vector: ai += || ai ||.rij
             
             ai_x += ai*rijx;
             ai_y += ai*rijy;
