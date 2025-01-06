@@ -19,6 +19,8 @@ class  SimulationNBodySIMD : public SimulationNBodyInterface {
   protected:
     void initIteration();
     void computeBodiesAcceleration();
+    void computeBodiesAccelerationV2();
+    void computeBodiesAccelerationV3();
 };
 
 #endif /* SIMULATION_N_BODY_NAIVE_HPP_ */
