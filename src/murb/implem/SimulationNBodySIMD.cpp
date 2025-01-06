@@ -95,11 +95,9 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             rijSquared += rijy * rijy;
             rijSquared += rijz * rijz; // 5 flops
             rijSquared += softSquared;
-            mipp::dump<float>(rijSquared.r);
+            // mipp::dump<float>(rijSquared.r);
 
-            mipp::Reg<float> r_pow = mipp::mul(rijSquared, rijSquared); 
-            r_pow = mipp::mul(r_pow, r_pow);
-            r_pow = mipp::sqrt(r_pow);
+            mipp::Reg<float> r_pow = mipp::mul(rijSquared, mipp::sqrt(rijSquared)); 
             // printf("r_pow avant revers sqrt\n");
             // mipp::dump<float>(r_pow.r);
             // printf("\n");

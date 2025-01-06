@@ -194,6 +194,9 @@ SimulationNBodyInterface *createImplem()
     else if(ImplTag == "cpu+SIMD"){
         simu = new  SimulationNBodySIMD(NBodies, BodiesScheme, Softening);
     }
+    // else if(ImplTag == "cpu+OpenMP"){
+        // simu = new SimulationNBodyOpenMP(NBodies, BodiesScheme, Softening);
+    // }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;
         exit(-1);
