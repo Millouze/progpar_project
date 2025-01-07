@@ -35,16 +35,15 @@ void SimulationNBodyOpenMP::computeBodiesAcceleration()
 
     const float softSquared = this->soft *  this->soft;// 1 flops
     // flops = n² * 20
-    // #pragma omp parallel
-    // {
-    // #pragma omp for nowait
+    #pragma omp parallel for schedule(dynamic, 20)
     
         for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
-        #pragma omp parallel
-        {
+        //#pragma omp parallel num_threads(4)
+        //{
             float ax = this->accelerations[iBody].ax, ay = this->accelerations[iBody].ay, az = this->accelerations[iBody].az;
-            #pragma omp for nowait
+            //#pragma omp for schedule(static, 10) nowait 
+            
             for (unsigned long jBody = iBody+1; jBody < this->getBodies().getN(); jBody++) {
 
             //All forces of bodies of indexes lower than the current one have already been added to current body's accel skiping.
@@ -53,11 +52,12 @@ void SimulationNBodyOpenMP::computeBodiesAcceleration()
             const float rijz = d[jBody].qz - d[iBody].qz; // 1 flop
 
             // compute the || rij ||² distance between body i and body j
-            const float rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
+            float rijSquared = rijx*rijx + rijy * rijy + rijz * rijz; // 5 flops
+            rijSquared += softSquared;
             // compute e²
             
             
-            const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
+            float pow =  rijSquared * std::sqrt(rijSquared);
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
             const float ai = this->G * d[jBody].m / pow; // 3 flops
@@ -74,15 +74,16 @@ void SimulationNBodyOpenMP::computeBodiesAcceleration()
             this->accelerations[jBody].ay -= aj * rijy; // 2 flops
             this->accelerations[jBody].az -= aj * rijz; // 2 flops
             }
-            // }
+            
 
             this->accelerations[iBody].ax = ax;
             this->accelerations[iBody].ay = ay;
             this->accelerations[iBody].az = az;
-            }
+        }
+    
         
         
-    }
+    
 }
 
 void SimulationNBodyOpenMP::computeOneIteration()

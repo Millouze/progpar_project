@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "implem/SimulationNBodyOpenMP.hpp"
 #include "ogl/SpheresVisu.hpp"
 #include "ogl/SpheresVisuNo.hpp"
 #ifdef VISU
@@ -22,6 +21,7 @@
 #include "implem/SimulationNBodyNaive.hpp"
 #include "implem/SimulationNBodyLessComplex.hpp"
 #include "implem/SimulationNBodySIMD.hpp"
+#include "implem/SimulationNBodyOpenMP.hpp"
 
 /* global variables */
 unsigned long NBodies;               /*!< Number of bodies. */
