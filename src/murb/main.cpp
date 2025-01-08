@@ -22,7 +22,7 @@
 #include "implem/SimulationNBodyLessComplex.hpp"
 #include "implem/SimulationNBodySIMD.hpp"
 #include "implem/SimulationNBodySIMD_2.hpp"
-#include "implem/SimulationNBodySIMD_3.hpp"
+#include "implem/SimulationNBodyOpenCL.hpp"
 
 /* global variables */
 unsigned long NBodies;               /*!< Number of bodies. */
@@ -82,7 +82,7 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"cpu+LessComplex\"\n"
                      "\t\t\t - \"cpu+SIMD\"\n"
                      "\t\t\t - \"cpu+SIMD_2\"\n"
-                     "\t\t\t - \"cpu+SIMD_3\"\n"
+                     "\t\t\t - \"gpu+OpenCL\"\n"
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
     docArgs["-soft"] = "softening factor.";
@@ -201,8 +201,8 @@ SimulationNBodyInterface *createImplem()
     else if(ImplTag == "cpu+SIMD_2"){
         simu = new  SimulationNBodySIMD_2(NBodies, BodiesScheme, Softening);
     }
-    else if(ImplTag == "cpu+SIMD_3"){
-        simu = new  SimulationNBodySIMD_3(NBodies, BodiesScheme, Softening);
+    else if(ImplTag == "gpu+OpenCL"){
+        simu = new  SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
     }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;
