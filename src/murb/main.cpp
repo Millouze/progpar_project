@@ -21,7 +21,9 @@
 
 #include "implem/SimulationNBodyNaive.hpp"
 #include "implem/SimulationNBodyLessComplex.hpp"
-#include "implem/SimulationNBodySIMD.hpp"
+#include "implem/SimulationNBodyCUDA.hpp"
+#include "implem/SimulationNBodyBarnesHut.hpp"
+#include "implem/SimulationNBodyOpenCL.hpp"
 
 /* global variables */
 unsigned long NBodies;               /*!< Number of bodies. */
@@ -81,6 +83,7 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"cpu+LessComplex\"\n"
                      "\t\t\t - \"cpu+SIMD\"\n"
                      "\t\t\t - \"cpu+OpenMP\"\n"
+                     "\t\t\t - \"gpu+CUDA\"\n"
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
     docArgs["-soft"] = "softening factor.";
@@ -193,11 +196,19 @@ SimulationNBodyInterface *createImplem()
     else if (ImplTag == "cpu+LessComplex") {
         simu = new SimulationNBodyLessComplex(NBodies, BodiesScheme, Softening);
     }
-    else if(ImplTag == "cpu+SIMD"){
-        simu = new  SimulationNBodySIMD(NBodies, BodiesScheme, Softening);
+    else if(ImplTag == "gpu+CUDA"){
+        simu = new SimulationNBodyCUDA(NBodies, BodiesScheme, Softening);
     }
     else if(ImplTag == "cpu+OpenMP"){
         simu = new SimulationNBodyOpenMP(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "cpu+BarnesHut")
+    {
+        simu = new SimulationNBodyBarnesHut(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "gpu+OCL")
+    {
+        simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
     }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;

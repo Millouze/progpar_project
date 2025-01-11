@@ -6,10 +6,12 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Command line options
 option (ENABLE_MURB     "Enable to compile the MUrB executable"        ON )
-option (ENABLE_VISU     "Enable the OpenGL visualization"              OFF)
+option (ENABLE_VISU     "Enable the OpenGL visualization"              ON )
 option (ENABLE_TEST     "Enable test program to validate MUrB kernels" ON )
 option (ENABLE_MURB_OMP "Enable to compile the MUrB OMP executable"    ON )
-option (ENABLE_MURB_OCL "Enable to compile the MUrB OCL executable"    OFF)
+option (ENABLE_MURB_OCL "Enable to compile the MUrB OCL executable"    ON)
+option (ENABLE_MURB_CUDA "Enable to compile MUsB CUDA executable"      ON )
+
 
 if (NOT ENABLE_MURB)
     message("ENABLE_TEST has been switched OFF because ENABLE_MURB is disabled.")
@@ -22,6 +24,7 @@ message(STATUS "  * ENABLE_VISU: '${ENABLE_VISU}'")
 message(STATUS "  * ENABLE_TEST: '${ENABLE_TEST}'")
 message(STATUS "  * ENABLE_MURB_OMP: '${ENABLE_MURB_OMP}'")
 message(STATUS "  * ENABLE_MURB_OCL: '${ENABLE_MURB_OCL}'")
+message(STATUS "  * ENABLE_MURB_CUDA: '${ENABLE_MURB_CUDA}'")
 message(STATUS "MUrB info: ")
 message(STATUS "  * CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 
@@ -31,12 +34,25 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 # Specify bin path
 set (EXECUTABLE_OUTPUT_PATH bin/)
 
-# Enable C++11
-set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
+# Enable CUDA (nvcc)
+if (ENABLE_MURB_CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+    enable_language(CUDA)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    set(CMAKE_CUDA_ARCHITECTURES "native")
+    if (NOT DEFINED CMAKE_CUDA_STANDARD)
+        set(CMAKE_CUDA_STANDARD 11)
+        set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    endif ()
+else ()
+    # Enable C++11
+    set (CMAKE_CXX_STANDARD 11)
+    set (CMAKE_CXX_STANDARD_REQUIRED ON)
+endif ()
 
 if (ENABLE_VISU)
-    set (OpenGL_GL_PREFERENCE GLVND)
+    set (OpenGL_GL_PREFERENCE LEGACY)
     find_package (OpenGL REQUIRED)
     find_package (GLEW REQUIRED)
     find_package (GLM REQUIRED)
@@ -49,6 +65,9 @@ if (ENABLE_VISU)
         set (LINK_VISU 0)
     endif ()
 endif ()
+
+
+
 
 # Generate the common source code files list
 file (GLOB_RECURSE source_common src/common/*)
@@ -161,4 +180,9 @@ if ((ENABLE_MURB_OCL) AND (ENABLE_MURB))
         message(STATUS "OpenCL found")
         targets_link_libraries("${murb_targets_list}" PUBLIC OpenCL::OpenCL)
     endif (OpenCL_FOUND)
+
+    if ((ENABLE_MURB_CUDA) AND (ENABLE_MURB))
+        targets_compile_definitions("${murb_targets_list}" PRIVATE USE_CUDA)
+    endif ()
+
 endif ()
