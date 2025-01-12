@@ -5,12 +5,7 @@ import os
 os.chdir("build")
 
 def run_murb_once(bodies, iters,im):
-	"""
-		Run ./bin/murb -i iters -n bodies --nv and parses the output
-	"""
-	
-	sp = subprocess.Popen(["./bin/murb", "-i", str(iters), "-n", str(bodies), "--nv","--im",im],
-		stdout=subprocess.PIPE)
+	sp = subprocess.Popen(["./bin/murb", "-i", str(iters), "-n", str(bodies), "--nv","--im",im],stdout=subprocess.PIPE)
 	output = sp.stdout.read()
 	stats = output.splitlines()[-1].split()
 	ms = float(stats[3])
@@ -18,10 +13,6 @@ def run_murb_once(bodies, iters,im):
 	return ms, fps
 
 def run_murb_many(bodies, iters, n, im):
-	"""
-		Run ./bin/murb n times to get an average
-	"""
-
 	min_ms = 0
 	max_fps = 0
 
