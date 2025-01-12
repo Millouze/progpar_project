@@ -62,16 +62,20 @@ void SimulationNBodyCUDA::initIteration()
     }
 }
 
-static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
+__global__ void computeBodiesAcceleration(const unsigned long nBodies, const float softSquared, const float G,
                                           float *qx, float *qy, float *qz, float *m, accAoS_t<float> *accelerations)
 {
         int x = blockDim.x * blockIdx.x + threadIdx.x;
-        
+
+        if(x == 0){
+            printf("qx : %f\n", *qx);
+            printf("qy : %f\n", *qy);
+            printf("qz : %f\n", *qz);
+        }
         if(x > nBodies){
             return;
         }
-        //printf("blockspergrid %d\n",blocksPerGrid.x);
-
+        
         
         float ax = accelerations[x].ax, ay = accelerations[x].ay,
               az = accelerations[x].az;
