@@ -22,8 +22,8 @@
 #include "implem/SimulationNBodyNaive.hpp"
 #include "implem/SimulationNBodyLessComplex.hpp"
 #include "implem/SimulationNBodyCUDA.hpp"
-#include "implem/SimulationNBodyBarnesHut.hpp"
-#include "implem/SimulationNBodyOpenCL.hpp"
+#include "implem/SimulationNBodyAoS.hpp"
+
 
 /* global variables */
 unsigned long NBodies;               /*!< Number of bodies. */
@@ -202,14 +202,14 @@ SimulationNBodyInterface *createImplem()
     else if(ImplTag == "cpu+OpenMP"){
         simu = new SimulationNBodyOpenMP(NBodies, BodiesScheme, Softening);
     }
-    else if(ImplTag == "cpu+BarnesHut")
+    else if(ImplTag == "gpu+CUDA_AoS")
     {
-        simu = new SimulationNBodyBarnesHut(NBodies, BodiesScheme, Softening);
+        simu = new SimulationNBodyAoS(NBodies, BodiesScheme, Softening);
     }
-    else if(ImplTag == "gpu+OCL")
-    {
-        simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
-    }
+    // else if(ImplTag == "gpu+OCL")
+    // {
+        // simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
+    // }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;
         exit(-1);
