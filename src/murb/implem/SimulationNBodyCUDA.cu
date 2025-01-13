@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cuda.h>
+#include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -10,18 +11,25 @@
 #include "SimulationNBodyCUDA.hpp"
 #include "core/Bodies.hpp"
 
-static dim3 blocksPerGrid = {1};
-static dim3 threadsPerBlock = {1024};
-static float *d_qx, *d_qy, *d_qz, *d_m;
-static accAoS_t<float> *d_accelerations;
+// static dim3 blocksPerGrid = {1};
+// static dim3 threadsPerBlock = {1024};
+// static float *d_qx, *d_qy, *d_qz, *d_m;
+// static accAoS_t<float> *d_accelerations;
 
 
 SimulationNBodyCUDA::SimulationNBodyCUDA(const unsigned long nBodies, const std::string &scheme, const float soft,
                                          const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
+    const unsigned long arraySize = sizeof(float) * nBodies;
+    const unsigned long accSize = sizeof(struct accAoS_t<float>) * nBodies;
     this->flopsPerIte = 20.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
     this->accelerations.resize(this->getBodies().getN());
+    cudaMalloc(&this->d_qx, arraySize);
+    cudaMalloc(&this->d_qy, arraySize);
+    cudaMalloc(&this->d_qz, arraySize);
+    cudaMalloc(&this->d_m, arraySize);
+    cudaMalloc(&this->d_accelerations, accSize);
 }
 
 void SimulationNBodyCUDA::initIteration()
@@ -38,20 +46,12 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
 {
         int x = blockDim.x * blockIdx.x + threadIdx.x;
 
-        if(x == 0){
-            // printf("\n");
-            // printf("qx : %f\n", *(qx+sizeof(float))*10000);
-            // printf("\n");
-            // printf("qy : %f\n", *qy);
-            // printf("qz : %f\n", *qz);
-        }
         if(x > nBodies){
             return;
         }
         
         
-        float ax = accelerations[x].ax, ay = accelerations[x].ay,
-              az = accelerations[x].az;
+        float ax = 0, ay = 0, az = 0;
         for (unsigned long jBody = 0; jBody < nBodies; jBody++) {
 
             // All forces of bodies of indexes lower than the current one have already been added to current body's
@@ -74,6 +74,10 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
             ax += ai * rijx; // 2 flops
             ay += ai * rijy; // 2 flops
             az += ai * rijz; // 2 flops
+            
+            // accelerations[x].ax += ai *rijx;            
+            // accelerations[x].ay += ai * rijy;            
+            // accelerations[x].az += ai * rijz;            
 
             // Adding acceleration forces to the j body as well.
         }
@@ -88,30 +92,38 @@ void SimulationNBodyCUDA::computeOneIteration()
     this->initIteration();
     const float softSquared = this->soft * this->soft;
     const unsigned long nBodies = this->getBodies().getN();
-    std::vector<accAoS_t<float>> h_accelerations = this->accelerations;
     dataSoA_t<float> h_bodies = this->getBodies().getDataSoA();
     const unsigned long arraySize = sizeof(float) * nBodies;
+    const unsigned long accSize = sizeof(struct accAoS_t<float>) * nBodies;
 
-    cudaMalloc(&d_qx, arraySize);
-    cudaMalloc(&d_qy, arraySize);
-    cudaMalloc(&d_qz, arraySize);
-    cudaMalloc(&d_m, arraySize);
-    cudaMalloc(&d_accelerations, sizeof(accAoS_t<float>) * nBodies);
+    // cudaMalloc(&this->d_qx, arraySize);
+    // cudaMalloc(&this->d_qy, arraySize);
+    // cudaMalloc(&this->d_qz, arraySize);
+    // cudaMalloc(&this->d_m, arraySize);
+    // cudaMalloc(&this->d_accelerations, accSize);
+    cudaMemset(d_accelerations, 0, accSize);
+    cudaMemset(d_qx, 0, arraySize);
+    cudaMemset(d_qy, 0, arraySize);
+    cudaMemset(d_qz, 0, arraySize);
+    cudaMemset(d_m, 0, arraySize);
+    
 
-    cudaMemcpy(d_qx, &(h_bodies.qx), arraySize, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_qy, &h_bodies.qy, arraySize, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_qz, &h_bodies.qz, arraySize, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_m, &h_bodies.m, arraySize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_qx, &(h_bodies.qx[0]), arraySize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_qy, &(h_bodies.qy[0]), arraySize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_qz, &(h_bodies.qz[0]), arraySize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_m, &(h_bodies.m[0]), arraySize, cudaMemcpyHostToDevice);
 
     computeBodiesAcceleration<<< blocksPerGrid,threadsPerBlock >>>(nBodies, softSquared, this->G, d_qx, d_qy, d_qz, d_m, d_accelerations);
 
-    cudaMemcpy(this->accelerations.data(), &d_accelerations, sizeof(accAoS_t<float>) * nBodies, cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
 
-    cudaFree(d_qx);
-    cudaFree(d_qy);
-    cudaFree(d_qz);
-    cudaFree(d_m);
-    cudaFree(d_accelerations); 
+    cudaMemcpy(this->accelerations.data(), d_accelerations, accSize, cudaMemcpyDeviceToHost);
+
+    // cudaFree(d_qx);
+    // cudaFree(d_qy);
+    // cudaFree(d_qz);
+    // cudaFree(d_m);
+    // cudaFree(d_accelerations); 
     
     // time integration
     this->bodies.updatePositionsAndVelocities(this->accelerations, this->dt);

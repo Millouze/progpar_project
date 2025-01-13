@@ -22,6 +22,7 @@
 #include "implem/SimulationNBodyNaive.hpp"
 #include "implem/SimulationNBodyLessComplex.hpp"
 #include "implem/SimulationNBodyCUDA.hpp"
+#include "implem/SimulationNBodyOpenCL.hpp"
 #include "implem/SimulationNBodyAoS.hpp"
 
 
@@ -206,10 +207,10 @@ SimulationNBodyInterface *createImplem()
     {
         simu = new SimulationNBodyAoS(NBodies, BodiesScheme, Softening);
     }
-    // else if(ImplTag == "gpu+OCL")
-    // {
-        // simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
-    // }
+    else if(ImplTag == "gpu+OCL")
+    {
+        simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
+    }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;
         exit(-1);
