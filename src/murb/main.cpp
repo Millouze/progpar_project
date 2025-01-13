@@ -24,6 +24,8 @@
 #include "implem/SimulationNBodyCUDA.hpp"
 #include "implem/SimulationNBodyOpenCL.hpp"
 #include "implem/SimulationNBodyAoS.hpp"
+#include "implem/SimulationNBodyCUDA_opti.hpp"
+
 
 
 /* global variables */
@@ -85,6 +87,7 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"cpu+SIMD\"\n"
                      "\t\t\t - \"cpu+OpenMP\"\n"
                      "\t\t\t - \"gpu+CUDA\"\n"
+                     "\t\t\t - \"gpu+CUDA_opti\"\n"
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
     docArgs["-soft"] = "softening factor.";
@@ -210,6 +213,8 @@ SimulationNBodyInterface *createImplem()
     else if(ImplTag == "gpu+OCL")
     {
         simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
+    } else if(ImplTag == "gpu+CUDA_opti"){
+        simu = new SimulationNBodyCUDA_opti(NBodies, BodiesScheme, Softening);
     }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;

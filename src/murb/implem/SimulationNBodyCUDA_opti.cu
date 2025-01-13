@@ -7,7 +7,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "SimulationNBodyCUDA.hpp"
+#include "SimulationNBodyCUDA_opti.hpp"
 #include "core/Bodies.hpp"
 
 // static dim3 blocksPerGrid = {1};
@@ -22,7 +22,7 @@ __constant__ float softSquared;
 __constant__ float gravity;
 
 
-SimulationNBodyCUDA::SimulationNBodyCUDA(const unsigned long nBodies, const std::string &scheme, const float soft,
+SimulationNBodyCUDA_opti::SimulationNBodyCUDA_opti(const unsigned long nBodies, const std::string &scheme, const float soft,
                                          const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
@@ -45,7 +45,7 @@ SimulationNBodyCUDA::SimulationNBodyCUDA(const unsigned long nBodies, const std:
     //printf("blockspergrid %d\n",blocksPerGrid.x);
 }
 
-SimulationNBodyCUDA:: ~SimulationNBodyCUDA() {
+SimulationNBodyCUDA_opti:: ~SimulationNBodyCUDA_opti() {
       cudaFree(d_qx);
       cudaFree(d_qy);
       cudaFree(d_qz);
@@ -53,7 +53,7 @@ SimulationNBodyCUDA:: ~SimulationNBodyCUDA() {
       cudaFree(d_accelerations);
     }
 
-void SimulationNBodyCUDA::initIteration()
+void SimulationNBodyCUDA_opti::initIteration()
 {
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         this->accelerations[iBody].ax = 0.f;
@@ -65,8 +65,8 @@ void SimulationNBodyCUDA::initIteration()
 static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
                                           float *qx, float *qy, float *qz, float *m, accAoS_t<float> *accelerations)
 {
-        int x = blockDim.x * blockIdx.x + threadIdx.x;
-        
+        int x = (blockDim.x * blockIdx.x + threadIdx.x)*2;
+        int x_2 = (blockDim.x * blockIdx.x + threadIdx.x)*2 +1;
         if(x > nBodies){
             return;
         }
@@ -75,6 +75,8 @@ static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
         
         float ax = accelerations[x].ax, ay = accelerations[x].ay,
               az = accelerations[x].az;
+        float ax_2 = accelerations[x_2].ax, ay_2 = accelerations[x_2].ay,
+              az_2 = accelerations[x_2].az;
         for (unsigned long jBody = 0; jBody < nBodies; jBody++) {
 
             // All forces of bodies of indexes lower than the current one have already been added to current body's
@@ -83,20 +85,37 @@ static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
             const float rijy = qy[jBody]- qy[x]; // 1 flop
             const float rijz = qz[jBody] - qz[x]; // 1 flop
 
+            const float rijx_2 = qx[jBody]- qx[x_2]; // 1 flop
+            const float rijy_2 = qy[jBody]- qy[x_2]; // 1 flop
+            const float rijz_2 = qz[jBody] - qz[x_2]; // 1 flop
+
             // compute the || rij ||² distance between body i and body j
             float rijSquared = rijx * rijx + rijy * rijy + rijz * rijz; // 5 flops
             // compute e²
             rijSquared += softSquared;
 
+            float rijSquared_2 = rijx_2 * rijx_2 + rijy_2 * rijy_2 + rijz_2 * rijz_2; // 5 flops
+            // compute e²
+            rijSquared_2 += softSquared;
+
+
             const float pow = rsqrtf(rijSquared); // 2 flops
+
+             const float pow_2 = rsqrtf(rijSquared_2); // 2 flops
 
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
             const float ai = m[jBody] * (pow * pow * pow); // 3 flops
+
+            const float ai_2 = m[jBody] * (pow_2 * pow_2 * pow_2); // 3 flops
 
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
             ax += ai * rijx; // 2 flops
             ay += ai * rijy; // 2 flops
             az += ai * rijz; // 2 flops
+
+            ax_2 += ai_2 * rijx_2; // 2 flops
+            ay_2 += ai_2 * rijy_2; // 2 flops
+            az_2 += ai_2 * rijz_2; // 2 flops
             
             // accelerations[x].ax += ai *rijx;            
             // accelerations[x].ay += ai * rijy;            
@@ -108,9 +127,13 @@ static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
         accelerations[x].ax = ax * gravity;
         accelerations[x].ay = ay * gravity;
         accelerations[x].az = az * gravity;
+
+        accelerations[x_2].ax = ax_2 * gravity;
+        accelerations[x_2].ay = ay_2 * gravity;
+        accelerations[x_2].az = az_2 * gravity;
 }
 
-void SimulationNBodyCUDA::computeOneIteration()
+void SimulationNBodyCUDA_opti::computeOneIteration()
 {
     this->initIteration();
     //const float softSquared = this->soft * this->soft;
@@ -135,9 +158,9 @@ void SimulationNBodyCUDA::computeOneIteration()
     cudaMemcpy(d_qy, &(h_bodies.qy[0]), arraySize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_qz, &(h_bodies.qz[0]), arraySize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_m, &(h_bodies.m[0]), arraySize, cudaMemcpyHostToDevice);
-
+   
     dim3 threadsPerBlock = {512};
-    dim3 blocksPerGrid = {(nBodies+threadsPerBlock.x -1)/threadsPerBlock.x};
+    dim3 blocksPerGrid = {(((nBodies+1) /2)+threadsPerBlock.x -1)/threadsPerBlock.x};
     
 
     computeBodiesAcceleration<<< blocksPerGrid,threadsPerBlock >>>(nBodies, d_qx, d_qy, d_qz, d_m, d_accelerations);
