@@ -11,8 +11,8 @@
 
 static dim3 blocksPerGrid = {60};
 static dim3 threadsPerBlock = {1024};
-dataAoS_t<float> *d_bodies;
-accAoS_t<float> *d_accelerations;
+static dataAoS_t<float> *d_bodies;
+static accAoS_t<float> *d_accelerations;
 
 SimulationNBodyAoS::SimulationNBodyAoS(const unsigned long nBodies, const std::string &scheme, const float soft,
                                          const unsigned long randInit)
