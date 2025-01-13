@@ -7,10 +7,10 @@ __kernel void computeBodiesAcceleration(
     __global float *out_ay,
     __global float *out_az,
     const unsigned long n,
-    const float soft_squared,
-    const float g
+    const float soft_squared
 )
 {
+    const float g = 6.67384e-11f;
     unsigned long i = get_global_id(0);
     if (i > n)
         return;
@@ -26,7 +26,7 @@ __kernel void computeBodiesAcceleration(
         // compute the || rij ||² distance between body i and body j
         const float rij_squared = rijx * rijx + rijy * rijy + rijz * rijz;
 
-        const float inv_s = native_rsqrt(rij_squared + soft_squared);
+        const float inv_s = rsqrt(rij_squared + soft_squared);
 
         
         // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}

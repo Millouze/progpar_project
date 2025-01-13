@@ -10,7 +10,7 @@
 
 class SimulationNBodyOpenCL : public SimulationNBodyInterface {
   protected:
-    accSoA_t<float> accelerations;
+    accSoA_t<cl_float> accelerations;
     cl_context context;
     cl_kernel kernel;
     cl_command_queue cmd_queue;

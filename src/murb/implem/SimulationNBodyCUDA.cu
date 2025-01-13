@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cuda.h>
+#include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -36,13 +37,11 @@ SimulationNBodyCUDA::SimulationNBodyCUDA(const unsigned long nBodies, const std:
     const unsigned long accSize = sizeof(struct accAoS_t<float>) * nBodies;
     this->flopsPerIte = 20.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
     this->accelerations.resize(this->getBodies().getN());
-    cudaMalloc(&d_qx, arraySize);
-    cudaMalloc(&d_qy, arraySize);
-    cudaMalloc(&d_qz, arraySize);
-    cudaMalloc(&d_m, arraySize);
-    cudaMalloc(&d_accelerations, accSize);
-    //blocksPerGrid = {(unsigned int)this->getBodies().getN() / 1024};
-    //printf("blockspergrid %d\n",blocksPerGrid.x);
+    cudaMalloc(&this->d_qx, arraySize);
+    cudaMalloc(&this->d_qy, arraySize);
+    cudaMalloc(&this->d_qz, arraySize);
+    cudaMalloc(&this->d_m, arraySize);
+    cudaMalloc(&this->d_accelerations, accSize);
 }
 
 SimulationNBodyCUDA:: ~SimulationNBodyCUDA() {
@@ -67,18 +66,12 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
 {
         int x = blockDim.x * blockIdx.x + threadIdx.x;
 
-        if(x == 0){
-            printf("qx : %f\n", *qx);
-            printf("qy : %f\n", *qy);
-            printf("qz : %f\n", *qz);
-        }
         if(x > nBodies){
             return;
         }
         
         
-        float ax = accelerations[x].ax, ay = accelerations[x].ay,
-              az = accelerations[x].az;
+        float ax = 0, ay = 0, az = 0;
         for (unsigned long jBody = 0; jBody < nBodies; jBody++) {
 
             // All forces of bodies of indexes lower than the current one have already been added to current body's
