@@ -86,6 +86,7 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
     unsigned long loop_tail = (this->getBodies().getN()/N)*N;
     // printf("loop tail = %lu\n",loop_tail);
     mipp::Reg<float> grav = this->G;
+    //#pragma parallel for schedule(dynamic, 20)
     // flops = n² * 20
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         // flops = n * 20
@@ -493,6 +494,7 @@ void SimulationNBodySIMD::computeBodiesAccelerationV3()
 
     //Register with gravity in it
     mipp::Reg<float> grav = this->G;
+    //#pragma omp parallel for schedule(dynamic, 150)
     
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
 

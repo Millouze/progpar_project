@@ -89,7 +89,8 @@ void SimulationNBodySIMD_2::computeBodiesAcceleration()
 
     //Register with gravity in it
     mipp::Reg<float> grav = this->G;
-    
+    #pragma omp parallel for schedule(dynamic, 20) \
+                firstprivate(d)
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
 
 
@@ -119,14 +120,14 @@ void SimulationNBodySIMD_2::computeBodiesAcceleration()
             mipp::Reg<float> rijx = r_jqx - r_iqx; // 1 flop
             mipp::Reg<float> rijy = r_jqy - r_iqy; // 1 flop
             mipp::Reg<float> rijz = r_jqz - r_iqz; // 1 flop
-            mipp::Reg<float> rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
-            mipp::Reg<float> r_pow = rijSquared + softSquared;
-            r_pow = r_pow * mipp::sqrt<float>(rijSquared+softSquared);
-            mipp::Reg<float> ai = (r_jm * this->G)/r_pow;
+            //mipp::Reg<float> rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
+            mipp::Reg<float> rijSquared = mipp::fmadd(rijx,rijx, mipp::fmadd(rijy, rijy, rijz*rijz)); // 5 flops
+            mipp::Reg<float> r_pow = mipp::rsqrt_prec(rijSquared + softSquared);
+            mipp::Reg<float> ai = (r_jm * this->G) * r_pow * r_pow * r_pow;
             
-            r_ai_x += rijx * ai;
-            r_ai_y += rijy * ai;
-            r_ai_z += rijz * ai;
+            r_ai_x = mipp::fmadd(rijx, ai, r_ai_x);
+            r_ai_y = mipp::fmadd(rijy, ai, r_ai_y);
+            r_ai_z = mipp::fmadd(rijz, ai, r_ai_z);
             //Adding acceleration to jBodies
             // we need mass of iBody and SIMD reg of curent acceleration
             // mipp::Reg<float> r_jax = mipp::load(&this->accelerations.ax[jj]);
