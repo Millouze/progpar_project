@@ -7,10 +7,10 @@ __kernel void computeBodiesAcceleration(
     __global float *out_ay,
     __global float *out_az,
     const unsigned long n,
-    const float soft_squared
+    const float soft_squared,
+    const float g
 )
 {
-    const float g = 6.67384e-11f;
     unsigned long i = get_global_id(0);
     if (i > n)
         return;
@@ -30,7 +30,7 @@ __kernel void computeBodiesAcceleration(
 
         
         // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-        const float ai = in_m[j] * inv_s * inv_s * inv_s;
+        const float ai = in_m[j] * inv_s * inv_s * inv_s * g;
 
         // add the acceleration value into the acceleration vector: ai += || ai ||.rij
         ax += ai * rijx;
@@ -38,7 +38,7 @@ __kernel void computeBodiesAcceleration(
         az += ai * rijz;
     }
 
-    out_ax[i] += ax * g;
-    out_ay[i] += ay * g;
-    out_az[i] += az * g;
+    out_ax[i] += ax ;
+    out_ay[i] += ay ;
+    out_az[i] += az ;
 }
