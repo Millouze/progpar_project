@@ -9,8 +9,8 @@
 #include "SimulationNBodyAoS.hpp"
 #include "core/Bodies.hpp"
 
-static dim3 blocksPerGrid = {60};
-static dim3 threadsPerBlock = {1024};
+//static dim3 blocksPerGrid = {60};
+//static dim3 threadsPerBlock = {1024};
 static dataAoS_t<float> *d_bodies;
 static accAoS_t<float> *d_accelerations;
 
@@ -86,6 +86,9 @@ void SimulationNBodyAoS::computeOneIteration()
     cudaMalloc(&d_accelerations, sizeof(struct accAoS_t<float>) * nBodies);
 
     cudaMemcpy(d_bodies, h_bodies.data(), sizeof(struct dataAoS_t<float>) * nBodies, cudaMemcpyHostToDevice);
+
+    dim3 blocksPerGrid = {(nBodies+1023)/1024};
+    dim3 threadsPerBlock = {1024};
 
     computeBodiesAcceleration<<< blocksPerGrid,threadsPerBlock >>>(this->getBodies().getN(), softSquared, this->G, d_bodies, d_accelerations);
 

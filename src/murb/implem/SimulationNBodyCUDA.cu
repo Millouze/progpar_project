@@ -15,8 +15,8 @@
 // static float *d_qx, *d_qy, *d_qz, *d_m;
 // static accAoS_t<float> *d_accelerations;
 
-static dim3 blocksPerGrid = {60} ;
-static dim3 threadsPerBlock = {1024};
+//static dim3 blocksPerGrid = {60} ;
+//static dim3 threadsPerBlock = {1024};
 
 
 SimulationNBodyCUDA::SimulationNBodyCUDA(const unsigned long nBodies, const std::string &scheme, const float soft,
@@ -82,7 +82,7 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
             const float pow = rsqrtf(rijSquared); // 2 flops
 
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            const float ai = G * m[jBody] * (pow * pow * pow); // 3 flops
+            const float ai = m[jBody] * (pow * pow * pow); // 3 flops
 
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
             ax += ai * rijx; // 2 flops
@@ -96,9 +96,9 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
             // Adding acceleration forces to the j body as well.
         }
 
-        accelerations[x].ax = ax;
-        accelerations[x].ay = ay;
-        accelerations[x].az = az;
+        accelerations[x].ax = ax * G;
+        accelerations[x].ay = ay * G;
+        accelerations[x].az = az * G;
 }
 
 void SimulationNBodyCUDA::computeOneIteration()
@@ -126,6 +126,10 @@ void SimulationNBodyCUDA::computeOneIteration()
     cudaMemcpy(d_qy, &(h_bodies.qy[0]), arraySize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_qz, &(h_bodies.qz[0]), arraySize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_m, &(h_bodies.m[0]), arraySize, cudaMemcpyHostToDevice);
+
+    dim3 threadsPerBlock = {1024};
+    dim3 blocksPerGrid = {(nBodies+threadsPerBlock.x -1)/threadsPerBlock.x};
+    
 
     computeBodiesAcceleration<<< blocksPerGrid,threadsPerBlock >>>(nBodies, softSquared, this->G, d_qx, d_qy, d_qz, d_m, d_accelerations);
 
