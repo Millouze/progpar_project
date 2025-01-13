@@ -23,8 +23,8 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
     if (this->boundary % 32 != 0)
         this->boundary = (n_bodies / 32) * 32 + 32;
 
-    cl_uint num_platforms = 0;
-    cl_int err = CL_SUCCESS;
+    uint num_platforms = 0;
+    int err = CL_SUCCESS;
 
     /* Fetch number of available platforms (platform = specific opencl implem) */
     if ((err = clGetPlatformIDs(0, NULL, &num_platforms)) != CL_SUCCESS) {
@@ -40,7 +40,7 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
     }
 
     /* Fetch number of devices assiociated with a platform (device = hardware linked to the opencl implem) */
-    cl_uint num_devices;
+    uint num_devices;
     if ((err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices)) != CL_SUCCESS) {
         std::cerr << "clGetDeviceIDs failed; error = " << err << std::endl;
         exit(EXIT_FAILURE); 
@@ -80,7 +80,6 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
 
     /* Create & build the program */
     const char *c_source = source.c_str();
-    //printf("%s\n", c_source);
     const size_t lengths[] = { source.size() };
 
     cl_program program = clCreateProgramWithSource(this->context, 1, &c_source, lengths, &err);
@@ -107,8 +106,7 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
         exit(EXIT_FAILURE); 
     }
 
-    // std::cout << "kernel built !" << std::endl;
-
+    
     const dataSoA_t<float> &d = this->getBodies().getDataSoA();
 
     this->in_buf_qx = clCreateBuffer(this->context, 
@@ -132,7 +130,7 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
 
     err = clEnqueueWriteBuffer(this->cmd_queue, in_buf_m,
         CL_TRUE, 0,  d.m.size() * sizeof(d.m[0]), (void*) &d.m[0],0,NULL,NULL);
-    //std::cout << "kernel buffer created !" << std::endl;
+    
 }
 
 void SimulationNBodyOpenCL::initIteration()
@@ -151,9 +149,7 @@ void SimulationNBodyOpenCL::computeBodiesAcceleration()
     const float softSquared = this->soft * this->soft; // 1 flops
     unsigned long n_bodies = this->getBodies().getN();
 
-    /* CL_MEM_USE_HOST_PTR vs CL_MEM_COPY_HOST_PTR ? */
-    /* if we use USE_HOST_PTR can we init only once ? */
-    cl_int err = CL_SUCCESS;
+    int err = CL_SUCCESS;
 
     err = clEnqueueWriteBuffer(this->cmd_queue, in_buf_qx,
         CL_TRUE, 0,  n_bodies * sizeof(d.qx[0]), (void*) &d.qx[0],0,NULL,NULL);
