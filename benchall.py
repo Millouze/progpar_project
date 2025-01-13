@@ -17,16 +17,20 @@ def run_murb_once(bodies, iters,im):
 
 def run_murb_many(bodies, iters, n, im):
 
-	min_ms = 0
-	max_fps = 0
+        min_ms = 0
+        max_fps = 0
+        fpss = []
+        mss = []
 
-	for _ in range(n):
-		ms, fps = run_murb_once(bodies, iters,im)
-		if fps > max_fps:
-			max_fps = fps
-			min_ms = ms
-	
-	return min_ms, max_fps
+
+        for _ in range(n):
+                ms, fps = run_murb_once(bodies, iters,im)
+                fpss.append(fps)
+                mss.append(ms)
+                if fps > max_fps:
+                        max_fps = fps
+                        min_ms = ms
+        return min_ms, max_fps, fpss, mss
 
 def gen_arg_parser():
         parser = argparse.ArgumentParser(
@@ -45,8 +49,12 @@ if __name__ == "__main__":
                 print("running bench for "+im+"\n")
                 f.write("bodies,fps\n")
                 for n in range(1000, parser.n, int(parser.n/1000)*100):
+                        f2 = open("../bench/"+im+"_"+str(n)+".csv" , "w")
                         print(str(n)+ " bodies")
-                        ms, fps = run_murb_many(n, 1000, parser.k, im)
+                        f2.write("fps,ms\n")
+                        ms, fps, fpss, mss = run_murb_many(n, 1000, parser.k, im)
+                        for (a,b) in zip(fpss, mss):
+                                f2.write(str(a)+","+str(b)+"\n")
                         f.write(str(n)+","+str(fps)+"\n")
 
 """ print("{} FPS, {} ms".format(fps, ms)) """
