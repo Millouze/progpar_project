@@ -61,7 +61,7 @@ void SimulationNBodyCUDA::initIteration()
     }
 }
 
-__global__ void computeBodiesAcceleration(const unsigned long nBodies, const float softSquared, const float G,
+static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
                                           float *qx, float *qy, float *qz, float *m, accAoS_t<float> *accelerations)
 {
         int x = blockDim.x * blockIdx.x + threadIdx.x;
