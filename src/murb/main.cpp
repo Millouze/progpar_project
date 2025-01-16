@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "implem/SimulationNBodyOpenMP.hpp"
 #include "ogl/SpheresVisu.hpp"
 #include "ogl/SpheresVisuNo.hpp"
 #ifdef VISU
@@ -20,8 +21,15 @@
 
 #include "implem/SimulationNBodyNaive.hpp"
 #include "implem/SimulationNBodyLessComplex.hpp"
+#include "implem/SimulationNBodyCUDA.hpp"
+#include "implem/SimulationNBodyOpenCL.hpp"
+#include "implem/SimulationNBodyAoS.hpp"
+#include "implem/SimulationNBodyCUDA_opti.hpp"
 #include "implem/SimulationNBodySIMD.hpp"
 #include "implem/SimulationNBodySIMD_2.hpp"
+
+
+
 
 /* global variables */
 unsigned long NBodies;               /*!< Number of bodies. */
@@ -80,7 +88,11 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"cpu+naive\"\n"
                      "\t\t\t - \"cpu+LessComplex\"\n"
                      "\t\t\t - \"cpu+SIMD\"\n"
+                     "\t\t\t - \"cpu+OpenMP\"\n"
+                     "\t\t\t - \"gpu+CUDA\"\n"
+                     "\t\t\t - \"gpu+CUDA_opti\"\n"
                      "\t\t\t - \"cpu+SIMD_2\"\n"
+
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
     docArgs["-soft"] = "softening factor.";
@@ -193,8 +205,36 @@ SimulationNBodyInterface *createImplem()
     else if (ImplTag == "cpu+LessComplex") {
         simu = new SimulationNBodyLessComplex(NBodies, BodiesScheme, Softening);
     }
-    else if(ImplTag == "cpu+SIMD"){
-        simu = new  SimulationNBodySIMD(NBodies, BodiesScheme, Softening);
+    else if(ImplTag == "gpu+CUDA"){
+        simu = new SimulationNBodyCUDA(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "cpu+OpenMP"){
+        simu = new SimulationNBodyOpenMP(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "gpu+CUDA_AoS")
+    {
+        simu = new SimulationNBodyAoS(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "gpu+OCL")
+    {
+        simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
+    } else if(ImplTag == "gpu+CUDA_opti"){
+        simu = new SimulationNBodyCUDA_opti(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "cpu+SIMD_2"){
+        simu = new  SimulationNBodySIMD_2(NBodies, BodiesScheme, Softening);
+    else if(ImplTag == "cpu+OpenMP"){
+        simu = new SimulationNBodyOpenMP(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "gpu+CUDA_AoS")
+    {
+        simu = new SimulationNBodyAoS(NBodies, BodiesScheme, Softening);
+    }
+    else if(ImplTag == "gpu+OCL")
+    {
+        simu = new SimulationNBodyOpenCL(NBodies, BodiesScheme, Softening);
+    } else if(ImplTag == "gpu+CUDA_opti"){
+        simu = new SimulationNBodyCUDA_opti(NBodies, BodiesScheme, Softening);
     }
     else if(ImplTag == "cpu+SIMD_2"){
         simu = new  SimulationNBodySIMD_2(NBodies, BodiesScheme, Softening);
