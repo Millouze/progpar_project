@@ -159,7 +159,7 @@ void SimulationNBodyCUDA_opti::computeOneIteration()
     cudaMemcpy(d_qz, &(h_bodies.qz[0]), arraySize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_m, &(h_bodies.m[0]), arraySize, cudaMemcpyHostToDevice);
    
-    dim3 threadsPerBlock = {512};
+    dim3 threadsPerBlock = {128};
     dim3 blocksPerGrid = {(((nBodies+1) /2)+threadsPerBlock.x -1)/threadsPerBlock.x};
     
 
