@@ -2,10 +2,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <ostream>
 #include <string>
 
 #include "../../../lib/MIPP/src/mipp.h"
@@ -31,46 +27,6 @@ void SimulationNBodySIMD_2::initIteration()
         this->accelerations.az.push_back(0.f);
     }
 }
-
-
-//Quake's fast inverse square root but now MIPPed
-// mipp::Reg<float> Q_rsqrt( mipp::Reg<float> number )
-// {
-// 	long i;
-// 	mipp::Reg<float> x2, y;
-// 	mipp::Reg<float> threehalfs = 1.5F;
-
-// 	x2 = number * 0.5F;
-// 	y  = number;
-// 	i  = * ( long * ) &y;						// evil floating point bit level hacking
-// 	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-// 	y  = * ( float * ) &i;
-// 	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-// //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-// 	return y;
-// }
-
-
-// void print_reg(mipp::Reg<float> reg) {
-//     constexpr int N = mipp::N<float>();
-//     float mem[N];
-//     reg.store(mem);
-//     printf("{");
-//     for (int i=0;i<N;i++) {
-//         printf("%f, ",mem[i]);
-//     }
-//     printf("\b}\n");
-// }
-
-
-// inline mipp::Reg<float> heron_sqrt(const mipp::Reg<float> a)
-// {
-//     mipp::Reg<float> point_five = mipp::set1<float>(0.5f);
-//     mipp::Reg<float> res = mipp::sqrt(a);
-//     res = mipp::fmadd(point_five ,res, point_five * (a / res));
-//     return res;
-// }
 
 //We delete unecessary double calculation of forces by using the reciprocity of gravitational pull.
 
@@ -122,7 +78,7 @@ void SimulationNBodySIMD_2::computeBodiesAcceleration()
             mipp::Reg<float> rijz = r_jqz - r_iqz; // 1 flop
             //mipp::Reg<float> rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
             mipp::Reg<float> rijSquared = mipp::fmadd(rijx,rijx, mipp::fmadd(rijy, rijy, rijz*rijz)); // 5 flops
-            mipp::Reg<float> r_pow = mipp::rsqrt_prec(rijSquared + softSquared);
+            mipp::Reg<float> r_pow = mipp::rsqrt(rijSquared + softSquared);
             mipp::Reg<float> ai = (r_jm * this->G) * r_pow * r_pow * r_pow;
             
             r_ai_x = mipp::fmadd(rijx, ai, r_ai_x);
