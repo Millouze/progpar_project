@@ -7,10 +7,11 @@ __kernel void computeBodiesAcceleration(
     __global float *out_ay,
     __global float *out_az,
     const unsigned long n,
-    const float soft_squared
+    const float soft_squared,
+    const float G
+
 )
 {
-    const float g = 6.67384e-11f;
     unsigned long i = get_global_id(0);
     if (i > n)
         return;
@@ -38,7 +39,7 @@ __kernel void computeBodiesAcceleration(
         az += ai * rijz;
     }
 
-    out_ax[i] += ax * g;
-    out_ay[i] += ay * g;
-    out_az[i] += az * g;
+    out_ax[i] += ax * G;
+    out_ay[i] += ay * G;
+    out_az[i] += az * G;
 }

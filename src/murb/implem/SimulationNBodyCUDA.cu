@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <cstring>
 #include <cuda.h>
-#include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -43,6 +42,14 @@ SimulationNBodyCUDA::SimulationNBodyCUDA(const unsigned long nBodies, const std:
     cudaMalloc(&this->d_m, arraySize);
     cudaMalloc(&this->d_accelerations, accSize);
 }
+
+ SimulationNBodyCUDA::~SimulationNBodyCUDA() {
+      cudaFree(d_qx);
+      cudaFree(d_qy);
+      cudaFree(d_qz);
+      cudaFree(d_m);
+      cudaFree(d_accelerations);
+    }
 
 
 void SimulationNBodyCUDA::initIteration()

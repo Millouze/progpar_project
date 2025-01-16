@@ -78,7 +78,7 @@ void SimulationNBodySIMD_2::computeBodiesAcceleration()
             mipp::Reg<float> rijz = r_jqz - r_iqz; // 1 flop
             //mipp::Reg<float> rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
             mipp::Reg<float> rijSquared = mipp::fmadd(rijx,rijx, mipp::fmadd(rijy, rijy, rijz*rijz)); // 5 flops
-            mipp::Reg<float> r_pow = mipp::rsqrt(rijSquared + softSquared);
+            mipp::Reg<float> r_pow = mipp::rsqrt_prec(rijSquared + softSquared);
             mipp::Reg<float> ai = (r_jm * this->G) * r_pow * r_pow * r_pow;
             
             r_ai_x = mipp::fmadd(rijx, ai, r_ai_x);

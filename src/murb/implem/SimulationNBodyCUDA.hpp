@@ -1,11 +1,9 @@
 #ifndef SIMULATION_N_BODY_CUDA_HPP_
 #define SIMULATION_N_BODY_CUDA_HPP_
 
-#include <cuda_runtime_api.h>
 #include <string>
 
 #include "core/SimulationNBodyInterface.hpp"
-#include <cuda.h>
 
 class SimulationNBodyCUDA : public SimulationNBodyInterface {
   protected:
@@ -17,13 +15,7 @@ class SimulationNBodyCUDA : public SimulationNBodyInterface {
   public:
     SimulationNBodyCUDA(const unsigned long nBodies, const std::string &scheme = "galaxy", const float soft = 0.035f,
                          const unsigned long randInit = 0);
-    ~SimulationNBodyCUDA() {
-      cudaFree(d_qx);
-      cudaFree(d_qy);
-      cudaFree(d_qz);
-      cudaFree(d_m);
-      cudaFree(d_accelerations);
-    }
+    ~SimulationNBodyCUDA() ;
     virtual void computeOneIteration();
 
   protected:

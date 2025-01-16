@@ -170,7 +170,6 @@ void SimulationNBodyOpenCL::computeBodiesAcceleration()
          (void*) &this->accelerations.az[0], 0,NULL,NULL);
 
     /* Setup the kernel */
-    unsigned t = 0;
     clSetKernelArg(this->kernel, 0, sizeof(cl_mem), &in_buf_qx);
     clSetKernelArg(this->kernel, 1, sizeof(cl_mem), &in_buf_qy);
     clSetKernelArg(this->kernel, 2, sizeof(cl_mem), &in_buf_qz);
@@ -180,7 +179,7 @@ void SimulationNBodyOpenCL::computeBodiesAcceleration()
     clSetKernelArg(this->kernel, 6, sizeof(cl_mem), &out_buf_az);
     clSetKernelArg(this->kernel, 7, sizeof(cl_ulong), &n_bodies);
     clSetKernelArg(this->kernel, 8, sizeof(cl_float), &softSquared);
-    //clSetKernelArg(this->kernel, 9, sizeof(cl_float), &this->G);
+    clSetKernelArg(this->kernel, 9, sizeof(cl_float), &this->G);
 
     /* Enqueue kernel */
     const size_t global = this->boundary;

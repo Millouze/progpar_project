@@ -6,9 +6,9 @@
 
 #include "../../../lib/MIPP/src/mipp.h"
 
-#include "SimulationNBodySIMD.hpp"
+#include "SimulationNBodySIMD_base.hpp"
 
-SimulationNBodySIMD::SimulationNBodySIMD(const unsigned long nBodies, const std::string &scheme, const float soft,
+SimulationNBodySIMD_base::SimulationNBodySIMD_base(const unsigned long nBodies, const std::string &scheme, const float soft,
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
@@ -19,7 +19,7 @@ SimulationNBodySIMD::SimulationNBodySIMD(const unsigned long nBodies, const std:
     this->accelerations.az.resize(this->getBodies().getN() + this->getBodies().getPadding());
 }
 
-void SimulationNBodySIMD::initIteration()
+void SimulationNBodySIMD_base::initIteration()
 {
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         this->accelerations.ax.push_back(0.f);
@@ -30,14 +30,14 @@ void SimulationNBodySIMD::initIteration()
 
 //We delete unecessary double calculation of forces by using the reciprocity of gravitational pull.
 
-void SimulationNBodySIMD::computeBodiesAcceleration()
+void SimulationNBodySIMD_base::computeBodiesAcceleration()
 {
     const dataSoA_t<float> &d = this->getBodies().getDataSoA();
 
 
     const float softSquared = this->soft *  this->soft;// 1 flops
 
-    //SIMD Internal loop pitch
+    //SIMD_base Internal loop pitch
     constexpr int N = mipp::N<float>();
     unsigned long loop_tail = (this->getBodies().getN()/N)*N;
 
@@ -48,7 +48,7 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
 
 
         float ai_x=0,ai_y=0,ai_z=0;
-        //SIMD registers
+        //SIMD_base registers
         mipp::Reg<float> r_iqx = d.qx[iBody];
         mipp::Reg<float> r_iqy = d.qy[iBody];
         mipp::Reg<float> r_iqz = d.qz[iBody];
@@ -74,8 +74,8 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             mipp::Reg<float> rijy = r_jqy - r_iqy; // 1 flop
             mipp::Reg<float> rijz = r_jqz - r_iqz; // 1 flop
             mipp::Reg<float> rijSquared = mipp::fmadd(rijx,rijx, mipp::fmadd(rijy, rijy, rijz*rijz)); // 5 flops
-            mipp::Reg<float> r_pow = mipp::rsqrt_prec(rijSquared + softSquared);
-            mipp::Reg<float> ai = r_jm * r_pow * r_pow * r_pow;
+            mipp::Reg<float> r_pow = (rijSquared+softSquared) * mipp::sqrt(rijSquared + softSquared);
+            mipp::Reg<float> ai = (r_jm * this->G) / r_pow;
             
             r_ai_x = mipp::fmadd(rijx, ai, r_ai_x);
             r_ai_y = mipp::fmadd(rijy, ai, r_ai_y);
@@ -100,13 +100,13 @@ void SimulationNBodySIMD::computeBodiesAcceleration()
             ai_y += ai*rijy;
             ai_z += ai*rijz;
         }
-            this->accelerations.ax[iBody] = ai_x * this->G; // 2 flops
-            this->accelerations.ay[iBody] = ai_y * this->G; // 2 flops
-            this->accelerations.az[iBody] = ai_z * this->G; // 2 flops
+            this->accelerations.ax[iBody] = ai_x; // 2 flops
+            this->accelerations.ay[iBody] = ai_y; // 2 flops
+            this->accelerations.az[iBody] = ai_z; // 2 flops
     }
 }
 
-void SimulationNBodySIMD::computeOneIteration()
+void SimulationNBodySIMD_base::computeOneIteration()
 {
     this->initIteration();
     this->computeBodiesAcceleration();
