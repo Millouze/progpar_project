@@ -11,7 +11,7 @@ SimulationNBodyLessComplex::SimulationNBodyLessComplex(const unsigned long nBodi
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 27.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
+    this->flopsPerIte = 28.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
     this->accelerations.resize(this->getBodies().getN());
 }
 
@@ -48,13 +48,13 @@ void SimulationNBodyLessComplex::computeBodiesAcceleration()
             // compute e²
             
             
-            const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
+            const float pow = (rijSquared + softSquared) * std::sqrt(rijSquared + softSquared);// 4 flops
             
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            const float ai = this->G * d[jBody].m / pow; // 3 flops
+            const float ai = this->G * d[jBody].m / pow; // 2 flops
             
 
-            const float aj = this->G * d[iBody].m / pow; // 3 flops
+            const float aj = this->G * d[iBody].m / pow; // 2 flops
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
             ax += ai * rijx; // 2 flops
             ay += ai * rijy; // 2 flops

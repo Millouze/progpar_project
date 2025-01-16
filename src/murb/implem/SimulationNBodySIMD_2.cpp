@@ -12,7 +12,7 @@ SimulationNBodySIMD_2::SimulationNBodySIMD_2(const unsigned long nBodies, const 
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 27.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
+    this->flopsPerIte = 60.f * (((float)this->getBodies().getN()) * (float)this->getBodies().getN()) + 36.f * (float)this->getBodies().getN() + 1;
     //this->accelerations.resize(this->getBodies().getN());
     this->accelerations.ax.resize(this->getBodies().getN() + this->getBodies().getPadding());
     this->accelerations.ay.resize(this->getBodies().getN() + this->getBodies().getPadding());
@@ -73,42 +73,23 @@ void SimulationNBodySIMD_2::computeBodiesAcceleration()
             mipp::Reg<float> r_jqz = mipp::load(&d.qz[jj]);
             mipp::Reg<float> r_jm = mipp::load(&d.m[jj]);
 
-            mipp::Reg<float> rijx = r_jqx - r_iqx; // 1 flop
-            mipp::Reg<float> rijy = r_jqy - r_iqy; // 1 flop
-            mipp::Reg<float> rijz = r_jqz - r_iqz; // 1 flop
+            mipp::Reg<float> rijx = r_jqx - r_iqx; // 4 flop
+            mipp::Reg<float> rijy = r_jqy - r_iqy; // 4  flop
+            mipp::Reg<float> rijz = r_jqz - r_iqz; // 4  flop
             //mipp::Reg<float> rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
-            mipp::Reg<float> rijSquared = mipp::fmadd(rijx,rijx, mipp::fmadd(rijy, rijy, rijz*rijz)); // 5 flops
-            mipp::Reg<float> r_pow = mipp::rsqrt_prec(rijSquared + softSquared);
-            mipp::Reg<float> ai = (r_jm * this->G) * r_pow * r_pow * r_pow;
+            mipp::Reg<float> rijSquared = mipp::fmadd(rijx,rijx, mipp::fmadd(rijy, rijy, rijz*rijz)); // 12 flops
+            mipp::Reg<float> r_pow = mipp::rsqrt_prec(rijSquared + softSquared); // 8 flops
+            mipp::Reg<float> ai = (r_jm * this->G) * r_pow * r_pow * r_pow; // 16 flops
             
-            r_ai_x = mipp::fmadd(rijx, ai, r_ai_x);
-            r_ai_y = mipp::fmadd(rijy, ai, r_ai_y);
-            r_ai_z = mipp::fmadd(rijz, ai, r_ai_z);
-            //Adding acceleration to jBodies
-            // we need mass of iBody and SIMD reg of curent acceleration
-            // mipp::Reg<float> r_jax = mipp::load(&this->accelerations.ax[jj]);
-            // mipp::Reg<float> r_jay = mipp::load(&this->accelerations.ay[jj]);
-            // mipp::Reg<float> r_jaz = mipp::load(&this->accelerations.az[jj]);
-            // mipp::Reg<float> aj = (r_im * this->G)/r_pow;
-
-            // r_jax = r_jax - aj * rijx;
-            // r_jay = r_jay - aj * rijy;
-            // r_jaz = r_jaz - aj * rijz;
-
-            // mipp::store(&this->accelerations.ax[jj], r_jax);
-            // mipp::store(&this->accelerations.ay[jj], r_jay);
-            // mipp::store(&this->accelerations.az[jj], r_jaz);
-            // for(unsigned long i = 0; i<N;i++){
-            //     float aj = (im * this->G)/r_pow[i];
-            //     this->accelerations.ax[jj+i]-= aj*rijx[i];
-            //     this->accelerations.ay[jj+i]-= aj*rijy[i];
-            //     this->accelerations.az[jj+i]-= aj*rijz[i];
-            // }
+            r_ai_x = mipp::fmadd(rijx, ai, r_ai_x); // 4 flops
+            r_ai_y = mipp::fmadd(rijy, ai, r_ai_y);// 4 flops
+            r_ai_z = mipp::fmadd(rijz, ai, r_ai_z);// 4 flops
+           
             
         }
-            ai_x += (mipp::hadd<float>(r_ai_x));
-            ai_y += (mipp::hadd<float>(r_ai_y));
-            ai_z += (mipp::hadd<float>(r_ai_z));
+            ai_x += (mipp::hadd<float>(r_ai_x));  // 5 flops
+            ai_y += (mipp::hadd<float>(r_ai_y)); // 5 flops
+            ai_z += (mipp::hadd<float>(r_ai_z)); // 5 flops
 
         for(unsigned long jBody = loop_tail; jBody < this->getBodies().getN(); jBody++){
             
@@ -117,23 +98,18 @@ void SimulationNBodySIMD_2::computeBodiesAcceleration()
             const float rijz = d.qz[jBody] - iqz; // 1 flop
 
             const float rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
-            const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
-            const float ai = this->G * d.m[jBody] / pow; // 5 flops
+            const float pow = (rijSquared + softSquared) * std::sqrt(rijSquared + softSquared);// 4 flops
+            const float ai = this->G * d.m[jBody] / pow; // 3 flops
             
-            ai_x += ai*rijx;
-            ai_y += ai*rijy;
-            ai_z += ai*rijz;
+            ai_x += ai*rijx;  // 2 flops
+            ai_y += ai*rijy; // 2 flops
+            ai_z += ai*rijz; // 2 flops
 
-            //Adding acceleration to jBodies
-            
-            // const float aj = this->G * im / pow; // 3 flops
-            // this->accelerations.ax[jBody] -= aj * rijx; // 2 flops
-            // this->accelerations.ay[jBody] -= aj * rijy; // 2 flops
-            // this->accelerations.az[jBody] -= aj * rijz; // 2 flops
+        
         }
-            this->accelerations.ax[iBody] = ai_x; // 2 flops
-            this->accelerations.ay[iBody] = ai_y; // 2 flops
-            this->accelerations.az[iBody] = ai_z; // 2 flops
+            this->accelerations.ax[iBody] = ai_x;
+            this->accelerations.ay[iBody] = ai_y;
+            this->accelerations.az[iBody] = ai_z;
     }
 }
 

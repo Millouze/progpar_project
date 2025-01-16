@@ -51,12 +51,12 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
             // compute the || rij ||² distance between body i and body j
             float rijSquared = rijx * rijx + rijy * rijy + rijz * rijz; // 5 flops
             // compute e²
-            rijSquared += softSquared;
+            rijSquared += softSquared; //1 flops
 
-            const float pow = rsqrtf(rijSquared); // 2 flops
+            const float pow = rsqrtf(rijSquared); // 1 flops
 
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
-            const float ai = G * d[jBody].m * (pow * pow * pow); // 3 flops
+            const float ai = G * d[jBody].m * (pow * pow * pow); // 4 flops
 
             // add the acceleration value into the acceleration vector: ai += || ai ||.rij
             ax += ai * rijx; // 2 flops

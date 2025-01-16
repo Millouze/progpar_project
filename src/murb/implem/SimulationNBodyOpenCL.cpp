@@ -12,7 +12,7 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 30.f * ((float)this->getBodies().getN() * (float)this->getBodies().getN() - (float)this->getBodies().getN())/2;
+    this->flopsPerIte = 19.f * ((float)this->getBodies().getN() * (float)this->getBodies().getN() + 6* (float)this->getBodies().getN());
     
     this->accelerations.ax.resize(this->getBodies().getN());
     this->accelerations.ay.resize(this->getBodies().getN());

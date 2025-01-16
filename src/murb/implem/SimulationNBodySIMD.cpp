@@ -12,7 +12,7 @@ SimulationNBodySIMD::SimulationNBodySIMD(const unsigned long nBodies, const std:
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 27.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
+   this->flopsPerIte = 60.f * (((float)this->getBodies().getN()) * (float)this->getBodies().getN()) + 36.f * (float)this->getBodies().getN() + 1;
     //this->accelerations.resize(this->getBodies().getN());
     this->accelerations.ax.resize(this->getBodies().getN() + this->getBodies().getPadding());
     this->accelerations.ay.resize(this->getBodies().getN() + this->getBodies().getPadding());

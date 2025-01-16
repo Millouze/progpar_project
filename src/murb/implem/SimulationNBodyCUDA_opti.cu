@@ -34,7 +34,7 @@ SimulationNBodyCUDA_opti::SimulationNBodyCUDA_opti(const unsigned long nBodies, 
 
     const unsigned long arraySize = sizeof(float) * nBodies;
     const unsigned long accSize = sizeof(struct accAoS_t<float>) * nBodies;
-    this->flopsPerIte = 20.f * (float)this->getBodies().getN() * (float)this->getBodies().getN();
+    this->flopsPerIte = 38.f * (float)this->getBodies().getN() * (float)this->getBodies().getN() + 6.f * (float)this->getBodies().getN();
     this->accelerations.resize(this->getBodies().getN());
     cudaMalloc(&d_qx, arraySize);
     cudaMalloc(&d_qy, arraySize);
@@ -92,16 +92,16 @@ static __global__ void computeBodiesAcceleration(const unsigned long nBodies,
             // compute the || rij ||² distance between body i and body j
             float rijSquared = rijx * rijx + rijy * rijy + rijz * rijz; // 5 flops
             // compute e²
-            rijSquared += softSquared;
+            rijSquared += softSquared; // 1 flop 
 
             float rijSquared_2 = rijx_2 * rijx_2 + rijy_2 * rijy_2 + rijz_2 * rijz_2; // 5 flops
             // compute e²
-            rijSquared_2 += softSquared;
+            rijSquared_2 += softSquared; //1 flop
 
 
-            const float pow = rsqrtf(rijSquared); // 2 flops
+            const float pow = rsqrtf(rijSquared); // 1 flops
 
-             const float pow_2 = rsqrtf(rijSquared_2); // 2 flops
+             const float pow_2 = rsqrtf(rijSquared_2); // 1 flops
 
             // compute the acceleration value between body i and body j: || ai || = G.mj / (|| rij ||² + e²)^{3/2}
             const float ai = m[jBody] * (pow * pow * pow); // 3 flops

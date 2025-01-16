@@ -12,7 +12,7 @@ SimulationNBodySIMD_base::SimulationNBodySIMD_base(const unsigned long nBodies, 
                                            const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
-    this->flopsPerIte = 27.f * (((float)this->getBodies().getN()+1) * (float)this->getBodies().getN())/2;
+    this->flopsPerIte = 60.f * (((float)this->getBodies().getN()) * (float)this->getBodies().getN()) + 36.f * (float)this->getBodies().getN() + 1;
     //this->accelerations.resize(this->getBodies().getN());
     this->accelerations.ax.resize(this->getBodies().getN() + this->getBodies().getPadding());
     this->accelerations.ay.resize(this->getBodies().getN() + this->getBodies().getPadding());
@@ -93,8 +93,8 @@ void SimulationNBodySIMD_base::computeBodiesAcceleration()
             const float rijz = d.qz[jBody] - iqz; // 1 flop
 
             const float rijSquared = rijx * rijx + rijy * rijy + rijz *rijz; // 5 flops
-            const float pow = std::pow(rijSquared + softSquared, 3.f / 2.f);// 2 flops
-            const float ai = this->G * d.m[jBody] / pow; // 5 flops
+            const float pow = (rijSquared + softSquared) * std::sqrt(rijSquared + softSquared);// 4 flops
+            const float ai = this->G * d.m[jBody] / pow; // 3 flops
             
             ai_x += ai*rijx;
             ai_y += ai*rijy;
