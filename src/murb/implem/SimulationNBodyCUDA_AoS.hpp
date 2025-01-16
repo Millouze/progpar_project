@@ -5,14 +5,14 @@
 
 #include "core/SimulationNBodyInterface.hpp"
 
-class SimulationNBodyAoS : public SimulationNBodyInterface {
+class SimulationNBodyCUDA_AoS : public SimulationNBodyInterface {
   protected:
     std::vector<accAoS_t<float>> accelerations; /*!< Array of body acceleration structures. */
 
   public:
-    SimulationNBodyAoS(const unsigned long nBodies, const std::string &scheme = "galaxy", const float soft = 0.035f,
+    SimulationNBodyCUDA_AoS(const unsigned long nBodies, const std::string &scheme = "galaxy", const float soft = 0.035f,
                          const unsigned long randInit = 0);
-    virtual ~SimulationNBodyAoS() = default;
+    virtual ~SimulationNBodyCUDA_AoS() = default;
     virtual void computeOneIteration();
 
   protected:

@@ -6,7 +6,7 @@
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 
-#include "SimulationNBodyAoS.hpp"
+#include "SimulationNBodyCUDA_AoS.hpp"
 #include "core/Bodies.hpp"
 
 //static dim3 blocksPerGrid = {60};
@@ -14,7 +14,7 @@
 static dataAoS_t<float> *d_bodies;
 static accAoS_t<float> *d_accelerations;
 
-SimulationNBodyAoS::SimulationNBodyAoS(const unsigned long nBodies, const std::string &scheme, const float soft,
+SimulationNBodyCUDA_AoS::SimulationNBodyCUDA_AoS(const unsigned long nBodies, const std::string &scheme, const float soft,
                                          const unsigned long randInit)
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
@@ -22,7 +22,7 @@ SimulationNBodyAoS::SimulationNBodyAoS(const unsigned long nBodies, const std::s
     this->accelerations.resize(this->getBodies().getN());
 }
 
-void SimulationNBodyAoS::initIteration()
+void SimulationNBodyCUDA_AoS::initIteration()
 {
     for (unsigned long iBody = 0; iBody < this->getBodies().getN(); iBody++) {
         this->accelerations[iBody].ax = 0.f;
@@ -74,7 +74,7 @@ __global__ void computeBodiesAcceleration(const unsigned long nBodies, const flo
 
 }
 
-void SimulationNBodyAoS::computeOneIteration()
+void SimulationNBodyCUDA_AoS::computeOneIteration()
 {
     this->initIteration();
     const float softSquared = this->soft * this->soft;

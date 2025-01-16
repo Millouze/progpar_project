@@ -2,7 +2,7 @@
 #include <cmath>
 #include <string>
 
-#include "SimulationNBodyAoS.hpp"
+#include "SimulationNBodyCUDA_AoS.hpp"
 #include "SimulationNBodyNaive.hpp"
 
 void test_nbody_AOS(const size_t n, const float soft, const float dt, const size_t nIte, const std::string &scheme,
@@ -11,7 +11,7 @@ void test_nbody_AOS(const size_t n, const float soft, const float dt, const size
     SimulationNBodyNaive simuRef(n, scheme, soft);
     simuRef.setDt(dt);
 
-    SimulationNBodyAoS simuTest(n, scheme, soft);
+    SimulationNBodyCUDA_AoS simuTest(n, scheme, soft);
     simuTest.setDt(dt);
 
     const float *xRef = simuRef.getBodies().getDataSoA().qx.data();
