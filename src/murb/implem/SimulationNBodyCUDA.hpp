@@ -15,7 +15,7 @@ class SimulationNBodyCUDA : public SimulationNBodyInterface {
   public:
     SimulationNBodyCUDA(const unsigned long nBodies, const std::string &scheme = "galaxy", const float soft = 0.035f,
                          const unsigned long randInit = 0);
-    ~SimulationNBodyCUDA() ;
+    ~SimulationNBodyCUDA();
     virtual void computeOneIteration();
 
   protected:

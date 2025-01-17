@@ -94,8 +94,10 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"gpu+CUDA\"\n"
                      "\t\t\t - \"gpu+CUDA_AoS\"\n"
                      "\t\t\t - \"gpu+CUDA_opti\"\n"
-                     "\t\t\t - \"cpu+SIMD_OpenMP\"\n"
+                     "\t\t\t - \"cpu+SIMD_2\"\n"
                      "\t\t\t - \"cpu+SIMD_base\"\n"
+                     "\t\t\t - \"gpu+OCL\"\n"
+
 
 
                      "\t\t\t ----";
@@ -228,9 +230,6 @@ SimulationNBodyInterface *createImplem()
     }
     else if(ImplTag == "cpu+SIMD_2"){
         simu = new  SimulationNBodySIMD_2(NBodies, BodiesScheme, Softening);
-    }
-    else if(ImplTag == "cpu+OpenMP"){
-        simu = new SimulationNBodyOpenMP(NBodies, BodiesScheme, Softening);
     }
     else if(ImplTag == "gpu+OCL")
     {

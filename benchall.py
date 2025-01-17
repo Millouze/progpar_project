@@ -4,7 +4,7 @@ import os
 
 os.chdir("build")
 
-implems = ["cpu+SIMD", "cpu+SIMD_2"]
+implems = ["gpu+OCL"]
 
 
 def run_murb_once(bodies, iters, im):
@@ -28,7 +28,8 @@ def run_murb_many(bodies, iters, n, im):
     mss = []
     gfs = []
 
-    for _ in range(n):
+    for a in range(n):
+        print("On run ",str(a+1))
         ms, fps, gf = run_murb_once(bodies, iters, im)
         fpss.append(fps)
         mss.append(ms)
@@ -38,6 +39,7 @@ def run_murb_many(bodies, iters, n, im):
             min_ms = ms
             max_gf = gf
     return min_ms, max_fps, max_gf, fpss, mss, gfs
+
 
 
 def gen_arg_parser():
@@ -58,11 +60,11 @@ if __name__ == "__main__":
         f = open("../bench/" + im + ".csv", "w")
         print("running bench for " + im + "\n")
         f.write("bodies,fps,ms,gf\n")
-        for n in range(1000, parser.n, int(parser.n / 1000) * 100):
+        for n in [1000,5000,10000]:
             f2 = open("../bench/" + im + "_" + str(n) + ".csv", "w")
             print(str(n) + " bodies")
             f2.write("fps,ms,gf\n")
-            ms, fps, gf, fpss, mss, gfs = run_murb_many(n, 1000, parser.k, im)
+            ms, fps, gf, fpss, mss, gfs = run_murb_many(n, 5000 if n>8000 else 20000  , parser.k, im)
             for a, b, c in zip(fpss, mss, gfs):
                 f2.write(str(a) + "," + str(b) +","+str(c)+ "\n")
             f.write(str(n) + "," + str(fps) + "," + str(ms) +","+str(gf)+"\n")
