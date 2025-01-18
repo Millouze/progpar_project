@@ -29,6 +29,7 @@
 #include "implem/SimulationNBodySIMD_2.hpp"
 #include "implem/SimulationNBodySIMD_base.hpp"
 
+#include "implem/SimulationNBodyHybrid.hpp"
 
 
 
@@ -99,6 +100,8 @@ void argsReader(int argc, char **argv)
                      "\t\t\t - \"gpu+OCL\"\n"
 
 
+                     "\t\t\t - \"cpu+SIMD_OpenMP\"\n"
+                     "\t\t\t - \"gpu+Hybrid\"\n"
 
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
@@ -242,6 +245,8 @@ SimulationNBodyInterface *createImplem()
     }
     else if(ImplTag == "cpu+SIMD_base"){
         simu = new  SimulationNBodySIMD_base(NBodies, BodiesScheme, Softening);
+    else if(ImplTag == "cpu+Hybrid"){
+        simu = new  SimulationNBodyHybrid(NBodies, BodiesScheme, Softening);
     }
     else {
         std::cout << "Implementation '" << ImplTag << "' does not exist... Exiting." << std::endl;
