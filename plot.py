@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from pandas.core.internals.managers import raise_construction_error
 
 
 index_cuda = [1000, 6000, 11000]
@@ -35,7 +36,7 @@ def plot_30K():
     plt.gca().legend(('cpu','cpu+omp', 'opencl', 'cuda'), loc="upper left")
     plt.show()
  
-def run_plots(version, index_tab, run_nb, display):
+def run_plots_bars(version, index_tab, run_nb, display):
     a = 0
     fps_dev = []
     ms_dev = []
@@ -63,13 +64,55 @@ def run_plots(version, index_tab, run_nb, display):
 
     width=1000
     X_axis = np.array(index_array)
-    plt.bar(X_axis - width/2, fps_avg, width=1000, yerr=fps_dev, label="FPS mean", error_kw=error_style)
-    plt.bar(X_axis + width/2, gf_avg, width=1000, yerr=gf_dev, label="Gflops mean", error_kw=error_style)
+    fig, ax1 = plt.subplots()
+    ax1.bar(X_axis - width/2, fps_avg, width=1000, yerr=fps_dev, label="FPS mean", error_kw=error_style, color="darkblue")
+    ax1.set_ylabel('FPS mean')
+    ax2 = ax1.twinx()
+    ax2.bar(X_axis + width/2, gf_avg, width=1000, yerr=gf_dev, label="Gflops mean", error_kw=error_style, color="lightblue")
+    ax2.set_ylabel('GFlops mean')
+    plt.xticks(X_axis)
+    ax1.set_xlabel('Number of bodies', fontsize=10)
+    plt.suptitle("Average FPS for Different Values of Bodies for "+display+" version")
+    plt.title("Standard Deviation calculated on 5 runs")
+    fig.legend(loc='upper center', bbox_to_anchor=(0.5, 0.85), ncol=2)
+    plt.savefig(display+"bars", dpi=400)
+    plt.show()
+
+def run_plots_curve(version, index_tab, run_nb, display):
+    a = 0
+    fps_dev = []
+    ms_dev = []
+    gf_dev = []
+    fps_avg = []
+    ms_avg = []
+    gf_avg = []
+    
+    if index_tab=="ocl":
+        index_array = index_ocl
+    elif index_tab=="cuda":
+        index_array = index_cuda
+    else:
+        index_array = index_simd
+
+    for i in index_array:
+        data = pd.read_csv(version+"_"+str(i)+".csv")
+        fps_avg.append(data['fps'].sum()/run_nb)
+        ms_avg.append(data['ms'].sum()/run_nb)
+        gf_avg.append(data['gf'].sum()/run_nb)
+        fps_dev.append(stat.stdev(data['fps']))
+        ms_dev.append(stat.stdev(data['ms']))
+        gf_dev.append(stat.stdev(data['gf']))
+        a= a+1
+
+    width=1000
+    X_axis = np.array(index_array)
+    plt.plot(X_axis, fps_avg)
+    plt.plot(X_axis, gf_avg)
     plt.xticks(X_axis)
     plt.ylabel('FPS mean / GFlops mean', fontsize=10, color='red')
     plt.xlabel('Number of bodies', fontsize=10, color='green')
     plt.title("Average FPS for Different Value of Bodies for "+display+" version", title_dict)
-    plt.savefig(display, dpi=400)
+    plt.savefig(display+"curve", dpi=400)
     plt.legend()
     plt.show()
 
@@ -78,6 +121,7 @@ def gen_arg_parser():
     parser = argparse.ArgumentParser(
         prog="murb-bench")
     parser.add_argument("-v", help="version to plot", type=str, default="cpu+SIMD")
+    parser.add_argument("-gtype", help="indicates the graph shape type curve|bar", type=str, default="bar")
     parser.add_argument("-i", help="index array to choose between ocl|cuda|simd", type=str, default="simd")
     parser.add_argument("-ite", help="size of run samples", type=int, default=5)
     parser.add_argument("-display", help="for display purposes", type=str, default="precisez version")
@@ -86,5 +130,7 @@ def gen_arg_parser():
 if __name__ == "__main__":
     parser = gen_arg_parser().parse_args()
     # plot_30K()
-    run_plots(parser.v, parser.i, parser.ite, parser.display)
-
+    if(parser.gtype=="bar"):
+        run_plots_bars(parser.v, parser.i, parser.ite, parser.display)
+    else:
+        run_plots_curve(parser.v, parser.i, parser.ite, parser.display)
