@@ -101,7 +101,7 @@ void argsReader(int argc, char **argv)
 
 
                      "\t\t\t - \"cpu+SIMD_OpenMP\"\n"
-                     "\t\t\t - \"gpu+Hybrid\"\n"
+                     "\t\t\t - \"cpu+Hybrid\"\n"
 
                      "\t\t\t ----";
     faculArgs["-soft"] = "softeningFactor";
@@ -245,7 +245,7 @@ SimulationNBodyInterface *createImplem()
     }
     else if(ImplTag == "cpu+SIMD_base"){
         simu = new  SimulationNBodySIMD_base(NBodies, BodiesScheme, Softening);
-    else if(ImplTag == "cpu+Hybrid"){
+    }else if(ImplTag == "cpu+Hybrid"){
         simu = new  SimulationNBodyHybrid(NBodies, BodiesScheme, Softening);
     }
     else {

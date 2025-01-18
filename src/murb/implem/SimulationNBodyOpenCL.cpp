@@ -26,7 +26,7 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
     uint num_platforms = 0;
     int err = CL_SUCCESS;
 
-    /* Fetch number of available platforms (platform = specific opencl implem) */
+    /* Fetch number of available platforms */
     if ((err = clGetPlatformIDs(0, NULL, &num_platforms)) != CL_SUCCESS) {
         std::cerr << "clGetPlatformIDs failed; error = " << err << std::endl;
         exit(EXIT_FAILURE);
@@ -39,7 +39,7 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
         exit(EXIT_FAILURE); 
     }
 
-    /* Fetch number of devices assiociated with a platform (device = hardware linked to the opencl implem) */
+    /* Fetch number of devices assiociated with a platform */
     uint num_devices;
     if ((err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices)) != CL_SUCCESS) {
         std::cerr << "clGetDeviceIDs failed; error = " << err << std::endl;
@@ -68,7 +68,6 @@ SimulationNBodyOpenCL::SimulationNBodyOpenCL(const unsigned long nBodies, const 
     }
 
     /* Read kernel source */
-    /* TODO: pass the source name as a constructor parameter */
     std::ifstream source_file("../src/murb/implem/kernel/naive.cl");
     if (!source_file.is_open()) {
         std::cerr << "opening 'kernel/naive.cl' failed" << std::endl;
@@ -183,7 +182,7 @@ void SimulationNBodyOpenCL::computeBodiesAcceleration()
 
     /* Enqueue kernel */
     const size_t global = this->boundary;
-    const size_t local = 32; /* n_bodies doit etre un multiple de local ??? */
+    const size_t local = 32; 
 
     clEnqueueNDRangeKernel(this->cmd_queue, this->kernel, 1, NULL, &global, &local, 0, NULL, NULL);
     
