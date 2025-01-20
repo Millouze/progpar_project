@@ -18,12 +18,12 @@ SimulationNBodyHybrid::SimulationNBodyHybrid(const unsigned long nBodies, const 
     : SimulationNBodyInterface(nBodies, scheme, soft, randInit)
 {
     if((int)(nBodies*(1-CPU_PERCENTAGE))%32 != 0) {
-        NforWrap = (((int)(nBodies*(1-CPU_PERCENTAGE))/32)+1)*32;
+        NforWarp = (((int)(nBodies*(1-CPU_PERCENTAGE))/32)+1)*32;
     } else {
-        NforWrap = nBodies*(1-CPU_PERCENTAGE);
+        NforWarp = nBodies*(1-CPU_PERCENTAGE);
     }
 
-    NforProcs = this->getBodies().getN() - NforWrap;
+    NforProcs = this->getBodies().getN() - NforWarp;
 
         
     const float hsoft = this->soft * this->soft;
